@@ -1,0 +1,48 @@
+{
+    "name": "amphp/http-client-cookies",
+    "homepage": "https://github.com/amphp/http-client-cookies",
+    "description": "Automatic cookie handling for Amp's HTTP client.",
+    "keywords": [
+        "http",
+        "cookie",
+        "cookies",
+        "client",
+        "async"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Daniel Lowrey",
+            "email": "rdlowrey@gmail.com"
+        },
+        {
+            "name": "Niklas Keller",
+            "email": "me@kelunik.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "amphp/amp": "^2",
+        "amphp/socket": "dev-master as 1.0",
+        "amphp/http": "dev-master as 1.2",
+        "amphp/http-client": "dev-master as 4.0"
+    },
+    "require-dev": {
+        "amphp/phpunit-util": "dev-master as 2.0.0",
+        "amphp/php-cs-fixer-config": "dev-master",
+        "phpunit/phpunit": "^7 || ^8",
+        "friendsofphp/php-cs-fixer": "^2.3",
+        "amphp/http-server": "v2.x-dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Amp\\Http\\Client\\Cookie\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amp\\Http\\Client\\Cookie\\": "test"
+        }
+    }
+}
+
