@@ -2,6 +2,7 @@
 
 namespace Amp\Http\Client\Cookie;
 
+use Amp\Http\Client\HttpException;
 use Amp\Http\Client\Request;
 use Amp\Http\Cookie\ResponseCookie;
 
@@ -9,53 +10,39 @@ class ArrayCookieJar implements CookieJar
 {
     private $cookies = [];
 
-    /**
-     * Store a cookie.
-     *
-     * @param ResponseCookie $cookie
-     *
-     * @return void
-     */
+    /** @inheritDoc */
     public function store(ResponseCookie $cookie): void
     {
+        if ($cookie->getDomain() === '') {
+            throw new HttpException("Can't store cookie without domain information.");
+        }
+
         $this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()] = $cookie;
     }
 
-    /**
-     * Remove a specific cookie from the storage.
-     *
-     * @param ResponseCookie $cookie
-     */
+    /** @inheritDoc */
     public function remove(ResponseCookie $cookie): void
     {
+        if ($cookie->getDomain() === '') {
+            throw new HttpException("Can't clear cookie without domain information.");
+        }
+
         unset($this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()]);
     }
 
-    /**
-     * Remove all stored cookies.
-     */
+    /** @inheritDoc */
     public function removeAll(): void
     {
         $this->cookies = [];
     }
 
-    /**
-     * Retrieve all stored cookies.
-     *
-     * @return array Returns array in the format `$array[$domain][$path][$cookieName]`.
-     */
+    /** @inheritDoc */
     public function getAll(): array
     {
         return $this->cookies;
     }
 
-    /**
-     * Retrieve all cookies matching the specified constraints.
-     *
-     * @param Request $request
-     *
-     * @return array Returns an array (possibly empty) of all cookie matches.
-     */
+    /** @inheritDoc */
     public function get(Request $request): array
     {
         $this->clearExpiredCookies();
