@@ -4,9 +4,9 @@ namespace Amp\Http\Client\Cookie;
 
 use Amp\CancellationToken;
 use Amp\Dns\InvalidNameException;
-use Amp\Http\Client\Client;
-use Amp\Http\Client\ConnectionInfo;
+use Amp\Http\Client\Connection\Connection;
 use Amp\Http\Client\Cookie\Internal\PublicSuffixList;
+use Amp\Http\Client\HttpException;
 use Amp\Http\Client\NetworkInterceptor;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
@@ -27,14 +27,13 @@ final class CookieHandler implements NetworkInterceptor
     public function interceptNetworkRequest(
         Request $request,
         CancellationToken $cancellationToken,
-        ConnectionInfo $connectionInfo,
-        Client $next
+        Connection $connection
     ): Promise {
-        return call(function () use ($request, $cancellationToken, $next) {
+        return call(function () use ($request, $cancellationToken, $connection) {
             $request = $this->assignApplicableRequestCookies($request);
 
             /** @var Response $response */
-            $response = yield $next->request($request, $cancellationToken);
+            $response = yield $connection->request($request, $cancellationToken);
 
             if ($response->hasHeader('Set-Cookie')) {
                 $requestDomain = $response->getRequest()->getUri()->getHost();
@@ -77,6 +76,12 @@ final class CookieHandler implements NetworkInterceptor
         return $request;
     }
 
+    /**
+     * @param string $requestDomain
+     * @param string $rawCookieStr
+     *
+     * @throws HttpException
+     */
     private function storeResponseCookie(string $requestDomain, string $rawCookieStr): void
     {
         try {

@@ -2,12 +2,12 @@
 
 namespace Amp\Test\Artax\Cookie;
 
-use Amp\Http\Client\ClientBuilder;
+use Amp\Http\Client\Client;
+use Amp\Http\Client\Connection\DefaultConnectionPool;
 use Amp\Http\Client\Cookie\ArrayCookieJar;
 use Amp\Http\Client\Cookie\CookieHandler;
 use Amp\Http\Client\Cookie\CookieJar;
 use Amp\Http\Client\Request;
-use Amp\Http\Client\SocketClient;
 use Amp\Http\Cookie\CookieAttributes;
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\Http\Server\Options;
@@ -19,14 +19,13 @@ use Amp\Loop;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\Socket;
 use Amp\Socket\StaticConnector;
-use Amp\Socket\UnlimitedSocketPool;
 use Psr\Log\NullLogger;
 use function Amp\Promise\wait;
 use function Amp\Socket\connector;
 
 class ClientCookieTest extends AsyncTestCase
 {
-    /** @var SocketClient */
+    /** @var Client */
     private $client;
 
     /** @var CookieJar */
@@ -56,7 +55,8 @@ class ClientCookieTest extends AsyncTestCase
 
         wait($this->server->start());
 
-        $this->client = (new ClientBuilder(new UnlimitedSocketPool(1000, new StaticConnector($this->address, connector()))))->addNetworkInterceptor(new CookieHandler($this->jar))->build();
+        $this->client = new Client(new DefaultConnectionPool(new StaticConnector($this->address, connector())));
+        $this->client->addNetworkInterceptor(new CookieHandler($this->jar));
     }
 
     /**
