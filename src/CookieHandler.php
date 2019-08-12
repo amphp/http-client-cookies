@@ -104,8 +104,11 @@ final class CookieHandler implements NetworkInterceptor
                     }
 
                     // cookie origin would not be included when sending the cookie
-                    if (\substr($requestDomain, 0,
-                            -\strlen($cookieDomain) - 1) . '.' . $cookieDomain !== $requestDomain) {
+                    if (\substr(
+                        $requestDomain,
+                        0,
+                        -\strlen($cookieDomain) - 1
+                    ) . '.' . $cookieDomain !== $requestDomain) {
                         return;
                     }
                 }
