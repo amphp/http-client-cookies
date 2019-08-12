@@ -4,7 +4,7 @@ namespace Amp\Http\Client\Cookie;
 
 use Amp\CancellationToken;
 use Amp\Dns\InvalidNameException;
-use Amp\Http\Client\Connection\Connection;
+use Amp\Http\Client\Connection\Stream;
 use Amp\Http\Client\Cookie\Internal\PublicSuffixList;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Client\NetworkInterceptor;
@@ -24,16 +24,16 @@ final class CookieHandler implements NetworkInterceptor
         $this->cookieJar = $cookieJar;
     }
 
-    public function interceptNetworkRequest(
+    public function interceptNetwork(
         Request $request,
-        CancellationToken $cancellationToken,
-        Connection $connection
+        CancellationToken $cancellation,
+        Stream $stream
     ): Promise {
-        return call(function () use ($request, $cancellationToken, $connection) {
-            $request = $this->assignApplicableRequestCookies($request);
+        return call(function () use ($request, $cancellation, $stream) {
+            $this->assignApplicableRequestCookies($request);
 
             /** @var Response $response */
-            $response = yield $connection->request($request, $cancellationToken);
+            $response = yield $stream->request($request, $cancellation);
 
             if ($response->hasHeader('Set-Cookie')) {
                 $requestDomain = $response->getRequest()->getUri()->getHost();
@@ -48,11 +48,11 @@ final class CookieHandler implements NetworkInterceptor
         });
     }
 
-    private function assignApplicableRequestCookies(Request $request): Request
+    private function assignApplicableRequestCookies(Request $request): void
     {
         if (!$applicableCookies = $this->cookieJar->get($request)) {
             // No cookies matched our request; we're finished.
-            return $request;
+            return;
         }
 
         $isRequestSecure = \strcasecmp($request->getUri()->getScheme(), 'https') === 0;
@@ -70,10 +70,8 @@ final class CookieHandler implements NetworkInterceptor
                 \array_unshift($cookiePairs, $request->getHeader('cookie'));
             }
 
-            return $request->withHeader('cookie', \implode('; ', $cookiePairs));
+            $request->setHeader('cookie', \implode('; ', $cookiePairs));
         }
-
-        return $request;
     }
 
     /**
@@ -106,7 +104,8 @@ final class CookieHandler implements NetworkInterceptor
                     }
 
                     // cookie origin would not be included when sending the cookie
-                    if (\substr($requestDomain, 0, -\strlen($cookieDomain) - 1) . '.' . $cookieDomain !== $requestDomain) {
+                    if (\substr($requestDomain, 0,
+                            -\strlen($cookieDomain) - 1) . '.' . $cookieDomain !== $requestDomain) {
                         return;
                     }
                 }
