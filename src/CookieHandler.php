@@ -24,7 +24,7 @@ final class CookieHandler implements NetworkInterceptor
         $this->cookieJar = $cookieJar;
     }
 
-    public function interceptNetwork(
+    public function requestViaNetwork(
         Request $request,
         CancellationToken $cancellation,
         Stream $stream
