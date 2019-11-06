@@ -4,6 +4,8 @@ namespace Amp\Http\Client\Cookie;
 
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
+use Amp\Promise;
+use Amp\Success;
 use Psr\Http\Message\UriInterface as PsrUri;
 
 final class InMemoryCookieJar implements CookieJar
@@ -11,16 +13,18 @@ final class InMemoryCookieJar implements CookieJar
     /** @var ResponseCookie[][][] */
     private $cookies = [];
 
-    public function store(ResponseCookie $cookie): void
+    public function store(ResponseCookie $cookie): Promise
     {
         if ($cookie->getDomain() === '') {
             throw new HttpException("Can't store cookie without domain information.");
         }
 
         $this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()] = $cookie;
+
+        return new Success;
     }
 
-    public function get(PsrUri $uri): array
+    public function get(PsrUri $uri): Promise
     {
         $this->clearExpiredCookies();
 
@@ -45,7 +49,7 @@ final class InMemoryCookieJar implements CookieJar
             }
         }
 
-        return $matches;
+        return new Success($matches);
     }
 
     public function getAll(): array

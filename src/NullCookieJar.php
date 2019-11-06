@@ -3,17 +3,19 @@
 namespace Amp\Http\Client\Cookie;
 
 use Amp\Http\Cookie\ResponseCookie;
+use Amp\Promise;
+use Amp\Success;
 use Psr\Http\Message\UriInterface as PsrUri;
 
 final class NullCookieJar implements CookieJar
 {
-    public function get(PsrUri $uri): array
+    public function get(PsrUri $uri): Promise
     {
-        return [];
+        return new Success([]);
     }
 
-    public function store(ResponseCookie $cookie): void
+    public function store(ResponseCookie $cookie): Promise
     {
-        // nothing to do
+        return new Success; // nothing to do
     }
 }

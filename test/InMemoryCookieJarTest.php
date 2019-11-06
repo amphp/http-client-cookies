@@ -26,12 +26,14 @@ class InMemoryCookieJarTest extends CookieTest
      * @param ResponseCookie $cookie
      * @param string         $domain
      * @param bool           $returned
+     *
+     * @return \Generator
      */
-    public function testCookieDomainMatching(ResponseCookie $cookie, string $domain, bool $returned): void
+    public function testCookieDomainMatching(ResponseCookie $cookie, string $domain, bool $returned): \Generator
     {
         $this->jar->store($cookie);
 
-        $requestCookies = $this->jar->get($this->getUri('https', $domain, '/'));
+        $requestCookies = yield $this->jar->get($this->getUri('https', $domain, '/'));
 
         if ($returned) {
             $this->assertSame([$cookie], $requestCookies);

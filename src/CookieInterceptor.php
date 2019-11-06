@@ -3,6 +3,7 @@
 namespace Amp\Http\Client\Cookie;
 
 use Amp\CancellationToken;
+use Amp\Coroutine;
 use Amp\Dns\InvalidNameException;
 use Amp\Http\Client\Connection\Stream;
 use Amp\Http\Client\Cookie\Internal\PublicSuffixList;
@@ -11,6 +12,7 @@ use Amp\Http\Client\NetworkInterceptor;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
 use Amp\Http\Cookie\ResponseCookie;
+use Amp\MultiReasonException;
 use Amp\Promise;
 use function Amp\call;
 
@@ -27,7 +29,7 @@ final class CookieInterceptor implements NetworkInterceptor
     public function requestViaNetwork(Request $request, CancellationToken $cancellation, Stream $stream): Promise
     {
         return call(function () use ($request, $cancellation, $stream) {
-            $this->assignApplicableRequestCookies($request);
+            yield from $this->assignApplicableRequestCookies($request);
 
             /** @var Response $response */
             $response = yield $stream->request($request, $cancellation);
@@ -36,8 +38,16 @@ final class CookieInterceptor implements NetworkInterceptor
                 $requestDomain = $response->getRequest()->getUri()->getHost();
                 $cookies = $response->getHeaderArray('set-cookie');
 
+                $promises = [];
+
                 foreach ($cookies as $rawCookie) {
-                    $this->storeResponseCookie($requestDomain, $rawCookie);
+                    $promises[] = new Coroutine($this->storeResponseCookie($requestDomain, $rawCookie));
+                }
+
+                try {
+                    yield $promises;
+                } catch (MultiReasonException $e) {
+                    throw $e->getReasons()[0];
                 }
             }
 
@@ -45,9 +55,9 @@ final class CookieInterceptor implements NetworkInterceptor
         });
     }
 
-    private function assignApplicableRequestCookies(Request $request): void
+    private function assignApplicableRequestCookies(Request $request): \Generator
     {
-        if (!$applicableCookies = $this->cookieJar->get($request->getUri())) {
+        if (!$applicableCookies = yield $this->cookieJar->get($request->getUri())) {
             // No cookies matched our request; we're finished.
             return;
         }
@@ -71,13 +81,7 @@ final class CookieInterceptor implements NetworkInterceptor
         }
     }
 
-    /**
-     * @param string $requestDomain
-     * @param string $rawCookieStr
-     *
-     * @throws HttpException
-     */
-    private function storeResponseCookie(string $requestDomain, string $rawCookieStr): void
+    private function storeResponseCookie(string $requestDomain, string $rawCookieStr): \Generator
     {
         try {
             $cookie = ResponseCookie::fromHeader($rawCookieStr);
@@ -111,8 +115,8 @@ final class CookieInterceptor implements NetworkInterceptor
                 $cookie = $cookie->withDomain('.' . $cookieDomain);
             }
 
-            $this->cookieJar->store($cookie);
-        } catch (InvalidNameException $e) {
+            yield $this->cookieJar->store($cookie);
+        } catch (InvalidNameException | HttpException $e) {
             // Ignore malformed Set-Cookie headers
         }
     }

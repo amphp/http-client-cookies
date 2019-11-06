@@ -4,6 +4,7 @@ namespace Amp\Http\Client\Cookie;
 
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
+use Amp\Promise;
 use Psr\Http\Message\UriInterface as PsrUri;
 
 final class FileCookieJar implements CookieJar
@@ -56,14 +57,14 @@ final class FileCookieJar implements CookieJar
         \file_put_contents($this->storagePath, $cookieData);
     }
 
-    public function get(PsrUri $uri): array
+    public function get(PsrUri $uri): Promise
     {
         return $this->cookieJar->get($uri);
     }
 
-    public function store(ResponseCookie $cookie): void
+    public function store(ResponseCookie $cookie): Promise
     {
-        $this->cookieJar->store($cookie);
+        return $this->cookieJar->store($cookie);
     }
 
     private function createStorageFile($storagePath)

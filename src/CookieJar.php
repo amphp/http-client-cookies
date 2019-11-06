@@ -5,6 +5,7 @@ namespace Amp\Http\Client\Cookie;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
+use Amp\Promise;
 use Psr\Http\Message\UriInterface as PsrUri;
 
 interface CookieJar
@@ -14,18 +15,18 @@ interface CookieJar
      *
      * @param PsrUri $uri
      *
-     * @return RequestCookie[] Returns an array (possibly empty) of all cookie matches.
+     * @return Promise<RequestCookie[]> Returns an array (possibly empty) of all cookie matches.
      */
-    public function get(PsrUri $uri): array;
+    public function get(PsrUri $uri): Promise;
 
     /**
      * Store a cookie.
      *
      * @param ResponseCookie $cookie
      *
-     * @return void
+     * @return Promise
      *
      * @throws HttpException
      */
-    public function store(ResponseCookie $cookie): void;
+    public function store(ResponseCookie $cookie): Promise;
 }
