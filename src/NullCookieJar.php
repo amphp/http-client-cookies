@@ -2,32 +2,17 @@
 
 namespace Amp\Http\Client\Cookie;
 
-use Amp\Http\Client\Request;
 use Amp\Http\Cookie\ResponseCookie;
+use Psr\Http\Message\UriInterface as PsrUri;
 
-class NullCookieJar implements CookieJar
+final class NullCookieJar implements CookieJar
 {
-    public function get(Request $request): array
-    {
-        return [];
-    }
-
-    public function getAll(): array
+    public function get(PsrUri $uri): array
     {
         return [];
     }
 
     public function store(ResponseCookie $cookie): void
-    {
-        // nothing to do
-    }
-
-    public function remove(ResponseCookie $cookie): void
-    {
-        // nothing to do
-    }
-
-    public function removeAll(): void
     {
         // nothing to do
     }

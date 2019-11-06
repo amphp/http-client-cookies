@@ -2,10 +2,16 @@
 
 namespace Amp\Http\Client\Cookie;
 
+use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
+use Psr\Http\Message\UriInterface as PsrUri;
 
-class FileCookieJar extends ArrayCookieJar
+final class FileCookieJar implements CookieJar
 {
+    /** @var InMemoryCookieJar */
+    private $cookieJar;
+
+    /** @var string */
     private $storagePath;
 
     public function __construct(string $storagePath)
@@ -25,7 +31,11 @@ class FileCookieJar extends ArrayCookieJar
                     continue;
                 }
 
-                $this->store($cookie);
+                try {
+                    $this->store($cookie);
+                } catch (HttpException $e) {
+                    // ignore invalid cookies in storage
+                }
             }
         }
 
@@ -36,18 +46,24 @@ class FileCookieJar extends ArrayCookieJar
     {
         $cookieData = '';
 
-        foreach ($this->getAll() as $pathArr) {
-            foreach ($pathArr as $cookieArr) {
-                foreach ($cookieArr as $cookie) {
-                    /** @var $cookie ResponseCookie */
-                    if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() < \time()) {
-                        $cookieData .= $cookie . PHP_EOL;
-                    }
-                }
+        foreach ($this->cookieJar->getAll() as $cookie) {
+            /** @var $cookie ResponseCookie */
+            if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() < \time()) {
+                $cookieData .= $cookie . PHP_EOL;
             }
         }
 
         \file_put_contents($this->storagePath, $cookieData);
+    }
+
+    public function get(PsrUri $uri): array
+    {
+        return $this->cookieJar->get($uri);
+    }
+
+    public function store(ResponseCookie $cookie): void
+    {
+        $this->cookieJar->store($cookie);
     }
 
     private function createStorageFile($storagePath)
@@ -68,7 +84,7 @@ class FileCookieJar extends ArrayCookieJar
 
     private function createStorageDirectory($dir): void
     {
-        if (!@\mkdir($dir, 0777, true) && !\is_dir($dir)) {
+        if (!@\mkdir($dir, 0755, true) && !\is_dir($dir)) {
             throw new \RuntimeException(
                 'Failed creating cookie storage directory: ' . $dir
             );

@@ -3,14 +3,14 @@
 namespace Amp\Http\Client\Cookie;
 
 use Amp\Http\Client\HttpException;
-use Amp\Http\Client\Request;
 use Amp\Http\Cookie\ResponseCookie;
+use Psr\Http\Message\UriInterface as PsrUri;
 
-class ArrayCookieJar implements CookieJar
+final class InMemoryCookieJar implements CookieJar
 {
+    /** @var ResponseCookie[][][] */
     private $cookies = [];
 
-    /** @inheritDoc */
     public function store(ResponseCookie $cookie): void
     {
         if ($cookie->getDomain() === '') {
@@ -20,35 +20,12 @@ class ArrayCookieJar implements CookieJar
         $this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()] = $cookie;
     }
 
-    /** @inheritDoc */
-    public function remove(ResponseCookie $cookie): void
-    {
-        if ($cookie->getDomain() === '') {
-            throw new HttpException("Can't clear cookie without domain information.");
-        }
-
-        unset($this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()]);
-    }
-
-    /** @inheritDoc */
-    public function removeAll(): void
-    {
-        $this->cookies = [];
-    }
-
-    /** @inheritDoc */
-    public function getAll(): array
-    {
-        return $this->cookies;
-    }
-
-    /** @inheritDoc */
-    public function get(Request $request): array
+    public function get(PsrUri $uri): array
     {
         $this->clearExpiredCookies();
 
-        $path = $request->getUri()->getPath() ?: '/';
-        $domain = \strtolower($request->getUri()->getHost());
+        $path = $uri->getPath() ?: '/';
+        $domain = $uri->getHost();
 
         $matches = [];
 
@@ -69,6 +46,26 @@ class ArrayCookieJar implements CookieJar
         }
 
         return $matches;
+    }
+
+    public function getAll(): array
+    {
+        $cookies = [];
+
+        foreach ($this->cookies as $cookiesPerDomain) {
+            foreach ($cookiesPerDomain as $cookiesPerPath) {
+                foreach ($cookiesPerPath as $cookie) {
+                    $cookies[] = $cookie;
+                }
+            }
+        }
+
+        return $cookies;
+    }
+
+    public function clear(): void
+    {
+        $this->cookies = [];
     }
 
     private function clearExpiredCookies(): void
@@ -127,15 +124,17 @@ class ArrayCookieJar implements CookieJar
     private function matchesPath(string $requestPath, string $cookiePath): bool
     {
         if ($requestPath === $cookiePath) {
-            $isMatch = true;
-        } elseif (\strpos($requestPath, $cookiePath) === 0
-            && (\substr($cookiePath, -1) === '/' || $requestPath[\strlen($cookiePath)] === '/')
-        ) {
-            $isMatch = true;
-        } else {
-            $isMatch = false;
+            return true;
         }
 
-        return $isMatch;
+        if (\strpos($requestPath, $cookiePath) !== 0) {
+            return false;
+        }
+
+        if ((\substr($cookiePath, -1) === '/' || $requestPath[\strlen($cookiePath)] === '/')) {
+            return true;
+        }
+
+        return false;
     }
 }

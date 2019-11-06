@@ -2,12 +2,14 @@
 
 namespace Amp\Test\Artax\Cookie;
 
-use Amp\Http\Client\Client;
 use Amp\Http\Client\Connection\DefaultConnectionPool;
-use Amp\Http\Client\Cookie\ArrayCookieJar;
-use Amp\Http\Client\Cookie\CookieHandler;
-use Amp\Http\Client\Cookie\CookieJar;
+use Amp\Http\Client\Cookie\CookieInterceptor;
+use Amp\Http\Client\Cookie\CookieTest;
+use Amp\Http\Client\Cookie\InMemoryCookieJar;
+use Amp\Http\Client\HttpClient;
+use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
+use Amp\Http\Client\Response;
 use Amp\Http\Cookie\CookieAttributes;
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\Http\Server\Options;
@@ -15,20 +17,18 @@ use Amp\Http\Server\RequestHandler\CallableRequestHandler;
 use Amp\Http\Server\Response as ServerResponse;
 use Amp\Http\Server\Server;
 use Amp\Http\Status;
-use Amp\Loop;
-use Amp\PHPUnit\AsyncTestCase;
 use Amp\Socket;
 use Amp\Socket\StaticConnector;
 use Psr\Log\NullLogger;
 use function Amp\Promise\wait;
 use function Amp\Socket\connector;
 
-class ClientCookieTest extends AsyncTestCase
+class ClientCookieTest extends CookieTest
 {
-    /** @var Client */
+    /** @var HttpClient */
     private $client;
 
-    /** @var CookieJar */
+    /** @var InMemoryCookieJar */
     private $jar;
 
     /** @var Server */
@@ -44,19 +44,22 @@ class ClientCookieTest extends AsyncTestCase
     {
         parent::setUp();
 
-        $this->jar = new ArrayCookieJar;
+        $this->jar = new InMemoryCookieJar;
 
         $socket = Socket\Server::listen('127.0.0.1:0');
         $socket->unreference();
+
         $this->address = $socket->getAddress();
         $this->server = new Server([$socket], new CallableRequestHandler(function () {
             return new ServerResponse(Status::OK, ['set-cookie' => $this->cookieHeader], '');
-        }), new NullLogger, (new Options)->withConnectionTimeout(1));
+        }), new NullLogger, (new Options)->withHttp1Timeout(1)->withHttp2Timeout(1));
 
         wait($this->server->start());
 
-        $this->client = new Client(new DefaultConnectionPool(new StaticConnector($this->address, connector())));
-        $this->client->addNetworkInterceptor(new CookieHandler($this->jar));
+        $this->client = (new HttpClientBuilder)
+            ->usingPool(new DefaultConnectionPool(new StaticConnector($this->address, connector())))
+            ->interceptNetwork(new CookieInterceptor($this->jar))
+            ->build();
     }
 
     /**
@@ -72,29 +75,69 @@ class ClientCookieTest extends AsyncTestCase
     {
         $this->cookieHeader = (string) $cookie;
 
-        yield $this->client->request(new Request('http://' . $requestDomain . '/'));
+        /** @var Response $response */
+        $response = yield $this->client->request(new Request('http://' . $requestDomain . '/'));
+        yield $response->getBody()->buffer();
+
+        $cookies = $this->jar->getAll();
 
         if ($accept) {
-            $this->assertCount(1, $this->jar->getAll());
+            $this->assertCount(1, $cookies);
         } else {
-            $this->assertSame([], $this->jar->getAll());
+            $this->assertSame([], $cookies);
         }
 
-        Loop::stop();
+        wait($this->server->stop());
     }
 
     public function provideCookieDomainMatchData(): array
     {
         return [
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.foo.bar.example.com')), 'foo.bar', false],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.example.com')), 'example.com', true],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.example.com')), 'www.example.com', true],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('example.com')), 'example.com', true],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('example.com')), 'www.example.com', true],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('example.com')), 'anotherexample.com', false],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('anotherexample.com')), 'example.com', false],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('com')), 'anotherexample.com', false],
-            [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.com')), 'anotherexample.com', false],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.foo.bar.example.com')),
+                'foo.bar',
+                false,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.example.com')),
+                'example.com',
+                true,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.example.com')),
+                'www.example.com',
+                true,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('example.com')),
+                'example.com',
+                true,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('example.com')),
+                'www.example.com',
+                true,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('example.com')),
+                'anotherexample.com',
+                false,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('anotherexample.com')),
+                'example.com',
+                false,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('com')),
+                'anotherexample.com',
+                false,
+            ],
+            [
+                new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('.com')),
+                'anotherexample.com',
+                false,
+            ],
             [new ResponseCookie('foo', 'bar', CookieAttributes::empty()->withDomain('')), 'example.com', true],
         ];
     }

@@ -3,26 +3,20 @@
 namespace Amp\Http\Client\Cookie;
 
 use Amp\Http\Client\HttpException;
-use Amp\Http\Client\Request;
+use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
+use Psr\Http\Message\UriInterface as PsrUri;
 
 interface CookieJar
 {
     /**
      * Retrieve all cookies matching the specified constraints.
      *
-     * @param Request $request
+     * @param PsrUri $uri
      *
-     * @return array Returns an array (possibly empty) of all cookie matches.
+     * @return RequestCookie[] Returns an array (possibly empty) of all cookie matches.
      */
-    public function get(Request $request): array;
-
-    /**
-     * Retrieve all stored cookies.
-     *
-     * @return array Returns array in the format `$array[$domain][$path][$cookieName]`.
-     */
-    public function getAll(): array;
+    public function get(PsrUri $uri): array;
 
     /**
      * Store a cookie.
@@ -34,18 +28,4 @@ interface CookieJar
      * @throws HttpException
      */
     public function store(ResponseCookie $cookie): void;
-
-    /**
-     * Remove a specific cookie from the storage.
-     *
-     * @param ResponseCookie $cookie
-     *
-     * @throws HttpException
-     */
-    public function remove(ResponseCookie $cookie): void;
-
-    /**
-     * Remove all stored cookies.
-     */
-    public function removeAll(): void;
 }

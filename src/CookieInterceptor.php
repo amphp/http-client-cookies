@@ -14,7 +14,7 @@ use Amp\Http\Cookie\ResponseCookie;
 use Amp\Promise;
 use function Amp\call;
 
-final class CookieHandler implements NetworkInterceptor
+final class CookieInterceptor implements NetworkInterceptor
 {
     /** @var CookieJar */
     private $cookieJar;
@@ -24,23 +24,20 @@ final class CookieHandler implements NetworkInterceptor
         $this->cookieJar = $cookieJar;
     }
 
-    public function requestViaNetwork(
-        Request $request,
-        CancellationToken $cancellation,
-        Stream $stream
-    ): Promise {
+    public function requestViaNetwork(Request $request, CancellationToken $cancellation, Stream $stream): Promise
+    {
         return call(function () use ($request, $cancellation, $stream) {
             $this->assignApplicableRequestCookies($request);
 
             /** @var Response $response */
             $response = yield $stream->request($request, $cancellation);
 
-            if ($response->hasHeader('Set-Cookie')) {
+            if ($response->hasHeader('set-cookie')) {
                 $requestDomain = $response->getRequest()->getUri()->getHost();
-                $cookies = $response->getHeaderArray('Set-Cookie');
+                $cookies = $response->getHeaderArray('set-cookie');
 
-                foreach ($cookies as $rawCookieStr) {
-                    $this->storeResponseCookie($requestDomain, $rawCookieStr);
+                foreach ($cookies as $rawCookie) {
+                    $this->storeResponseCookie($requestDomain, $rawCookie);
                 }
             }
 
@@ -50,12 +47,12 @@ final class CookieHandler implements NetworkInterceptor
 
     private function assignApplicableRequestCookies(Request $request): void
     {
-        if (!$applicableCookies = $this->cookieJar->get($request)) {
+        if (!$applicableCookies = $this->cookieJar->get($request->getUri())) {
             // No cookies matched our request; we're finished.
             return;
         }
 
-        $isRequestSecure = \strcasecmp($request->getUri()->getScheme(), 'https') === 0;
+        $isRequestSecure = $request->getUri()->getScheme() === 'https';
         $cookiePairs = [];
 
         /** @var ResponseCookie $cookie */
@@ -104,11 +101,8 @@ final class CookieHandler implements NetworkInterceptor
                     }
 
                     // cookie origin would not be included when sending the cookie
-                    if (\substr(
-                        $requestDomain,
-                        0,
-                        -\strlen($cookieDomain) - 1
-                    ) . '.' . $cookieDomain !== $requestDomain) {
+                    $cookieDomainLength = \strlen($cookieDomain);
+                    if (\substr($requestDomain, 0, -$cookieDomainLength - 1) . '.' . $cookieDomain !== $requestDomain) {
                         return;
                     }
                 }
