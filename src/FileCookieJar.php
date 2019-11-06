@@ -2,17 +2,12 @@
 
 namespace Amp\Http\Client\Cookie;
 
-use Amp\File\Driver;
+use Amp\File;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\Promise;
 use Psr\Http\Message\UriInterface as PsrUri;
 use function Amp\call;
-use function Amp\File\exists;
-use function Amp\File\get;
-use function Amp\File\isdir;
-use function Amp\File\mkdir;
-use function Amp\File\put;
 
 final class FileCookieJar implements CookieJar
 {
@@ -24,7 +19,7 @@ final class FileCookieJar implements CookieJar
 
     public function __construct(string $storagePath)
     {
-        if (!\interface_exists(Driver::class)) {
+        if (!\interface_exists(File\Driver::class)) {
             throw new \Error(self::class . ' requires amphp/file to be installed. Run composer require amphp/file to install it.');
         }
 
@@ -60,11 +55,11 @@ final class FileCookieJar implements CookieJar
         return $this->cookieJar = call(function () {
             $cookieJar = new InMemoryCookieJar;
 
-            if (!yield exists($this->storagePath)) {
+            if (!yield File\exists($this->storagePath)) {
                 return $cookieJar;
             }
 
-            $lines = \explode("\n", yield get($this->storagePath));
+            $lines = \explode("\n", yield File\get($this->storagePath));
             foreach ($lines as $line) {
                 $line = \trim($line);
 
@@ -98,15 +93,15 @@ final class FileCookieJar implements CookieJar
                 }
             }
 
-            if (!yield isdir(\dirname($this->storagePath))) {
-                yield mkdir(\dirname($this->storagePath), 0755, true);
+            if (!yield File\isdir(\dirname($this->storagePath))) {
+                yield File\mkdir(\dirname($this->storagePath), 0755, true);
 
-                if (!yield isdir(\dirname($this->storagePath))) {
+                if (!yield File\isdir(\dirname($this->storagePath))) {
                     throw new HttpException('Failed to create cookie storage directory: ' . $this->storagePath);
                 }
             }
 
-            yield put($this->storagePath, $cookieData);
+            yield File\put($this->storagePath, $cookieData);
         });
     }
 }
