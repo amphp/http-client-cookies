@@ -2,14 +2,21 @@
 
 namespace Amp\Http\Client\Cookie;
 
+use Amp\File\Driver;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\Promise;
 use Psr\Http\Message\UriInterface as PsrUri;
+use function Amp\call;
+use function Amp\File\exists;
+use function Amp\File\get;
+use function Amp\File\isdir;
+use function Amp\File\mkdir;
+use function Amp\File\put;
 
 final class FileCookieJar implements CookieJar
 {
-    /** @var InMemoryCookieJar */
+    /** @var Promise<InMemoryCookieJar> */
     private $cookieJar;
 
     /** @var string */
@@ -17,78 +24,89 @@ final class FileCookieJar implements CookieJar
 
     public function __construct(string $storagePath)
     {
-        if (!\file_exists($storagePath)) {
-            $cookieFileHandle = $this->createStorageFile($storagePath);
-        } elseif (false === ($cookieFileHandle = @\fopen($storagePath, 'rb+'))) {
-            throw new \RuntimeException(
-                'Failed opening cookie storage file for reading: ' . $storagePath
-            );
-        }
-
-        while (!\feof($cookieFileHandle)) {
-            if ($line = \fgets($cookieFileHandle)) {
-                $cookie = ResponseCookie::fromHeader($line);
-                if ($cookie === null) {
-                    continue;
-                }
-
-                try {
-                    $this->store($cookie);
-                } catch (HttpException $e) {
-                    // ignore invalid cookies in storage
-                }
-            }
+        if (!\interface_exists(Driver::class)) {
+            throw new \Error(self::class . ' requires amphp/file to be installed. Run composer require amphp/file to install it.');
         }
 
         $this->storagePath = $storagePath;
     }
 
-    public function __destruct()
-    {
-        $cookieData = '';
-
-        foreach ($this->cookieJar->getAll() as $cookie) {
-            /** @var $cookie ResponseCookie */
-            if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() < \time()) {
-                $cookieData .= $cookie . PHP_EOL;
-            }
-        }
-
-        \file_put_contents($this->storagePath, $cookieData);
-    }
-
     public function get(PsrUri $uri): Promise
     {
-        return $this->cookieJar->get($uri);
+        return call(function () use ($uri) {
+            /** @var CookieJar $cookieJar */
+            $cookieJar = yield $this->read();
+
+            return $cookieJar->get($uri);
+        });
     }
 
     public function store(ResponseCookie $cookie): Promise
     {
-        return $this->cookieJar->store($cookie);
+        return call(function () use ($cookie) {
+            /** @var InMemoryCookieJar $cookieJar */
+            $cookieJar = yield $this->read();
+            yield $cookieJar->store($cookie);
+            yield $this->write($cookieJar);
+        });
     }
 
-    private function createStorageFile($storagePath)
+    private function read(): Promise
     {
-        $dir = \dirname($storagePath);
-        if (!\is_dir($dir)) {
-            $this->createStorageDirectory($dir);
+        if ($this->cookieJar) {
+            return $this->cookieJar;
         }
 
-        if (!$cookieFileHandle = @\fopen($storagePath, 'wb+')) {
-            throw new \RuntimeException(
-                'Failed reading cookie storage file: ' . $storagePath
-            );
-        }
+        return $this->cookieJar = call(function () {
+            $cookieJar = new InMemoryCookieJar;
 
-        return $cookieFileHandle;
+            if (!yield exists($this->storagePath)) {
+                return $cookieJar;
+            }
+
+            $lines = \explode("\n", yield get($this->storagePath));
+            foreach ($lines as $line) {
+                $line = \trim($line);
+
+                if ($line) {
+                    $cookie = ResponseCookie::fromHeader($line);
+                    if ($cookie === null) {
+                        continue;
+                    }
+
+                    try {
+                        $cookieJar->store($cookie);
+                    } catch (HttpException $e) {
+                        // ignore invalid cookies in storage
+                    }
+                }
+            }
+
+            return $cookieJar;
+        });
     }
 
-    private function createStorageDirectory($dir): void
+    private function write(InMemoryCookieJar $cookieJar): Promise
     {
-        if (!@\mkdir($dir, 0755, true) && !\is_dir($dir)) {
-            throw new \RuntimeException(
-                'Failed creating cookie storage directory: ' . $dir
-            );
-        }
+        return call(function () use ($cookieJar) {
+            $cookieData = '';
+
+            foreach ($cookieJar->getAll() as $cookie) {
+                /** @var $cookie ResponseCookie */
+                if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() > \time()) {
+                    $cookieData .= $cookie . "\r\n";
+                }
+            }
+
+            if (!yield isdir(\dirname($this->storagePath))) {
+                yield mkdir(\dirname($this->storagePath), 0755, true);
+
+                if (!yield isdir(\dirname($this->storagePath))) {
+                    throw new HttpException('Failed to create cookie storage directory: ' . $this->storagePath);
+                }
+            }
+
+            yield put($this->storagePath, $cookieData);
+        });
     }
 }
