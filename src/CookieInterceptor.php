@@ -53,9 +53,10 @@ final class CookieInterceptor implements NetworkInterceptor
 
     private function assignApplicableRequestCookies(Request $request): \Generator
     {
-        if (!$applicableCookies = yield $this->cookieJar->get($request->getUri())) {
-            // No cookies matched our request; we're finished.
-            return;
+        $applicableCookies = yield $this->cookieJar->get($request->getUri());
+
+        if (!$applicableCookies) {
+            return; // No cookies matched our request; we're finished.
         }
 
         $cookiePairs = [];

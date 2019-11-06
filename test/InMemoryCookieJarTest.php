@@ -6,6 +6,7 @@ use Amp\Http\Client\Cookie\CookieJar;
 use Amp\Http\Client\Cookie\CookieTest;
 use Amp\Http\Client\Cookie\InMemoryCookieJar;
 use Amp\Http\Cookie\CookieAttributes;
+use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
 
 class InMemoryCookieJarTest extends CookieTest
@@ -36,7 +37,8 @@ class InMemoryCookieJarTest extends CookieTest
         $requestCookies = yield $this->jar->get($this->getUri('https', $domain, '/'));
 
         if ($returned) {
-            $this->assertSame([$cookie], $requestCookies);
+            $requestCookie = new RequestCookie($cookie->getName(), $cookie->getValue());
+            $this->assertSame((string) $requestCookie, \implode('; ', $requestCookies));
         } else {
             $this->assertSame([], $requestCookies);
         }
