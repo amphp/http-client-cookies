@@ -1,6 +1,7 @@
 <?php
 
 use Amp\Http\Client\Cookie\CookieInterceptor;
+use Amp\Http\Client\Cookie\FileCookieJar;
 use Amp\Http\Client\Cookie\InMemoryCookieJar;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
@@ -10,7 +11,7 @@ use Amp\Loop;
 require __DIR__ . '/../vendor/autoload.php';
 
 Loop::run(static function () {
-    $cookieJar = new InMemoryCookieJar;
+    $cookieJar = new FileCookieJar(__DIR__ . '/basic-file.cookies');
 
     $httpClient = (new HttpClientBuilder)
         ->interceptNetwork(new CookieInterceptor($cookieJar))
@@ -40,6 +41,6 @@ Loop::run(static function () {
     print \implode("\r\n", $secondResponse->getRequest()->getHeaderArray('cookie'));
     print "\r\n\r\n";
 
-    print "== other domain request does not send cookies ==\r\n";
+    print "== other domain request (might send different cookies) ==\r\n";
     print \implode("\r\n", $otherDomainResponse->getRequest()->getHeaderArray('cookie'));
 });
