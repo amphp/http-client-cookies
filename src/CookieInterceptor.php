@@ -11,8 +11,8 @@ use Amp\Http\Client\HttpException;
 use Amp\Http\Client\NetworkInterceptor;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
+use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
-use Amp\MultiReasonException;
 use Amp\Promise;
 use function Amp\call;
 
@@ -44,11 +44,7 @@ final class CookieInterceptor implements NetworkInterceptor
                     $promises[] = new Coroutine($this->storeResponseCookie($requestDomain, $rawCookie));
                 }
 
-                try {
-                    yield $promises;
-                } catch (MultiReasonException $e) {
-                    throw $e->getReasons()[0];
-                }
+                yield $promises;
             }
 
             return $response;
@@ -62,14 +58,11 @@ final class CookieInterceptor implements NetworkInterceptor
             return;
         }
 
-        $isRequestSecure = $request->getUri()->getScheme() === 'https';
         $cookiePairs = [];
 
-        /** @var ResponseCookie $cookie */
+        /** @var RequestCookie $cookie */
         foreach ($applicableCookies as $cookie) {
-            if ($isRequestSecure || !$cookie->isSecure()) {
-                $cookiePairs[] = $cookie->getName() . '=' . $cookie->getValue();
-            }
+            $cookiePairs[] = (string) $cookie;
         }
 
         if ($cookiePairs) {

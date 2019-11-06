@@ -3,6 +3,8 @@
 namespace Amp\Http\Client\Cookie;
 
 use Amp\Http\Client\HttpException;
+use Amp\Http\Cookie\InvalidCookieException;
+use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\Promise;
 use Amp\Success;
@@ -31,6 +33,8 @@ final class InMemoryCookieJar implements CookieJar
         $path = $uri->getPath() ?: '/';
         $domain = $uri->getHost();
 
+        $isRequestSecure = $uri->getScheme() === 'https';
+
         $matches = [];
 
         foreach ($this->cookies as $cookieDomain => $domainCookies) {
@@ -44,7 +48,13 @@ final class InMemoryCookieJar implements CookieJar
                 }
 
                 foreach ($pathCookies as $cookieName => $cookie) {
-                    $matches[] = $cookie;
+                    if ($isRequestSecure || !$cookie->isSecure()) {
+                        try {
+                            $matches[] = new RequestCookie($cookie->getName(), $cookie->getValue());
+                        } catch (InvalidCookieException $e) {
+                            // ignore cookie
+                        }
+                    }
                 }
             }
         }
