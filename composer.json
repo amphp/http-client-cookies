@@ -25,7 +25,7 @@
         "amphp/amp": "^2.3",
         "amphp/socket": "^1",
         "amphp/http": "^1.5",
-        "amphp/http-client": "^4.0.0-rc8"
+        "amphp/http-client": "dev-master as 4.0.0"
     },
     "require-dev": {
         "amphp/file": "^1",

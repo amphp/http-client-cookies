@@ -3,11 +3,9 @@
 namespace Amp\Http\Client\Cookie;
 
 use Amp\CancellationToken;
-use Amp\Coroutine;
 use Amp\Dns\InvalidNameException;
 use Amp\Http\Client\Connection\Stream;
 use Amp\Http\Client\Cookie\Internal\PublicSuffixList;
-use Amp\Http\Client\HttpException;
 use Amp\Http\Client\NetworkInterceptor;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
@@ -31,21 +29,14 @@ final class CookieInterceptor implements NetworkInterceptor
         return call(function () use ($request, $cancellation, $stream) {
             yield from $this->assignApplicableRequestCookies($request);
 
+            $request->interceptPush(function (Response $response) {
+                yield from $this->storeCookies($response);
+            });
+
             /** @var Response $response */
             $response = yield $stream->request($request, $cancellation);
 
-            if ($response->hasHeader('set-cookie')) {
-                $requestDomain = $response->getRequest()->getUri()->getHost();
-                $cookies = $response->getHeaderArray('set-cookie');
-
-                $promises = [];
-
-                foreach ($cookies as $rawCookie) {
-                    $promises[] = new Coroutine($this->storeResponseCookie($requestDomain, $rawCookie));
-                }
-
-                yield $promises;
-            }
+            yield from $this->storeCookies($response);
 
             return $response;
         });
@@ -75,12 +66,12 @@ final class CookieInterceptor implements NetworkInterceptor
         }
     }
 
-    private function storeResponseCookie(string $requestDomain, string $rawCookieStr): \Generator
+    private function createResponseCookie(string $requestDomain, string $rawCookieStr): ?ResponseCookie
     {
         try {
             $cookie = ResponseCookie::fromHeader($rawCookieStr);
             if ($cookie === null) {
-                return;
+                return null;
             }
 
             if (!$cookie->getDomain()) {
@@ -95,13 +86,13 @@ final class CookieInterceptor implements NetworkInterceptor
                 if ($cookieDomain !== $requestDomain) {
                     // ignore cookies on domains that are public suffixes
                     if (PublicSuffixList::isPublicSuffix($cookieDomain)) {
-                        return;
+                        return null;
                     }
 
                     // cookie origin would not be included when sending the cookie
                     $cookieDomainLength = \strlen($cookieDomain);
                     if (\substr($requestDomain, 0, -$cookieDomainLength - 1) . '.' . $cookieDomain !== $requestDomain) {
-                        return;
+                        return null;
                     }
                 }
 
@@ -109,9 +100,37 @@ final class CookieInterceptor implements NetworkInterceptor
                 $cookie = $cookie->withDomain('.' . $cookieDomain);
             }
 
-            yield $this->cookieJar->store($cookie);
-        } catch (InvalidNameException | HttpException $e) {
+            return $cookie;
+        } catch (InvalidNameException $e) {
             // Ignore malformed Set-Cookie headers
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Response $response
+     *
+     * @return \Generator
+     * @throws \Amp\Http\Client\HttpException
+     */
+    private function storeCookies(Response $response): \Generator
+    {
+        if ($response->hasHeader('set-cookie')) {
+            $requestDomain = $response->getRequest()->getUri()->getHost();
+            $rawCookies = $response->getHeaderArray('set-cookie');
+            $cookies = [];
+
+            foreach ($rawCookies as $rawCookie) {
+                $cookie = $this->createResponseCookie($requestDomain, $rawCookie);
+                if ($cookie !== null) {
+                    $cookies[] = $cookie;
+                }
+            }
+
+            if ($cookies) {
+                yield $this->cookieJar->store(...$cookies);
+            }
         }
     }
 }

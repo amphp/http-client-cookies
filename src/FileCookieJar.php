@@ -43,12 +43,16 @@ final class FileCookieJar implements CookieJar
         });
     }
 
-    public function store(ResponseCookie $cookie): Promise
+    public function store(ResponseCookie ...$cookies): Promise
     {
-        return call(function () use ($cookie) {
+        return call(function () use ($cookies) {
             /** @var InMemoryCookieJar $cookieJar */
             $cookieJar = yield $this->read();
-            yield $cookieJar->store($cookie);
+
+            foreach ($cookies as $cookie) {
+                yield $cookieJar->store($cookie);
+            }
+
             yield $this->write($cookieJar);
         });
     }

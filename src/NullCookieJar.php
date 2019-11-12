@@ -14,7 +14,7 @@ final class NullCookieJar implements CookieJar
         return new Success([]);
     }
 
-    public function store(ResponseCookie $cookie): Promise
+    public function store(ResponseCookie ...$cookie): Promise
     {
         return new Success; // nothing to do
     }

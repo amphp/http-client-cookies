@@ -22,11 +22,11 @@ interface CookieJar
     /**
      * Store a cookie.
      *
-     * @param ResponseCookie $cookie
+     * @param ResponseCookie ...$cookie
      *
      * @return Promise
      *
      * @throws HttpException
      */
-    public function store(ResponseCookie $cookie): Promise;
+    public function store(ResponseCookie ...$cookie): Promise;
 }

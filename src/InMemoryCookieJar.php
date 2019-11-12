@@ -15,13 +15,15 @@ final class InMemoryCookieJar implements CookieJar
     /** @var ResponseCookie[][][] */
     private $cookies = [];
 
-    public function store(ResponseCookie $cookie): Promise
+    public function store(ResponseCookie ...$cookies): Promise
     {
-        if ($cookie->getDomain() === '') {
-            throw new HttpException("Can't store cookie without domain information.");
-        }
+        foreach ($cookies as $cookie) {
+            if ($cookie->getDomain() === '') {
+                throw new HttpException("Can't store cookie without domain information.");
+            }
 
-        $this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()] = $cookie;
+            $this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()] = $cookie;
+        }
 
         return new Success;
     }

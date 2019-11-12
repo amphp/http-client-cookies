@@ -124,4 +124,9 @@ final class PublicSuffixList
 
         return $regex;
     }
+
+    private function __construct()
+    {
+        // no instances should be built
+    }
 }
