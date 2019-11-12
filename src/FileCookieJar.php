@@ -6,6 +6,9 @@ use Amp\File;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\Promise;
+use Amp\Sync\LocalMutex;
+use Amp\Sync\Lock;
+use Amp\Sync\Mutex;
 use Psr\Http\Message\UriInterface as PsrUri;
 use function Amp\call;
 
@@ -17,6 +20,9 @@ final class FileCookieJar implements CookieJar
     /** @var string */
     private $storagePath;
 
+    /** @var Mutex */
+    private $mutex;
+
     public function __construct(string $storagePath)
     {
         if (!\interface_exists(File\Driver::class)) {
@@ -24,6 +30,7 @@ final class FileCookieJar implements CookieJar
         }
 
         $this->storagePath = $storagePath;
+        $this->mutex = new LocalMutex;
     }
 
     public function get(PsrUri $uri): Promise
@@ -93,6 +100,9 @@ final class FileCookieJar implements CookieJar
                 }
             }
 
+            /** @var Lock $lock */
+            $lock = yield $this->mutex->acquire();
+
             if (!yield File\isdir(\dirname($this->storagePath))) {
                 yield File\mkdir(\dirname($this->storagePath), 0755, true);
 
@@ -102,6 +112,8 @@ final class FileCookieJar implements CookieJar
             }
 
             yield File\put($this->storagePath, $cookieData);
+
+            $lock->release();
         });
     }
 }
