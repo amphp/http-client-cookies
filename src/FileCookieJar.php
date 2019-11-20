@@ -23,14 +23,14 @@ final class FileCookieJar implements CookieJar
     /** @var Mutex */
     private $mutex;
 
-    public function __construct(string $storagePath)
+    public function __construct(string $storagePath, ?Mutex $mutex = null)
     {
         if (!\interface_exists(File\Driver::class)) {
             throw new \Error(self::class . ' requires amphp/file to be installed. Run composer require amphp/file to install it.');
         }
 
         $this->storagePath = $storagePath;
-        $this->mutex = new LocalMutex;
+        $this->mutex = $mutex ?? new LocalMutex;
     }
 
     public function get(PsrUri $uri): Promise
@@ -62,6 +62,9 @@ final class FileCookieJar implements CookieJar
         }
 
         return $this->cookieJar = call(function () {
+            /** @var Lock $lock */
+            $lock = yield $this->mutex->acquire();
+
             $cookieJar = new InMemoryCookieJar;
 
             if (!yield File\exists($this->storagePath)) {
@@ -85,6 +88,8 @@ final class FileCookieJar implements CookieJar
                     }
                 }
             }
+
+            $lock->release();
 
             return $cookieJar;
         });
