@@ -49,9 +49,7 @@ final class FileCookieJar implements CookieJar
             /** @var InMemoryCookieJar $cookieJar */
             $cookieJar = yield $this->read();
 
-            foreach ($cookies as $cookie) {
-                yield $cookieJar->store($cookie);
-            }
+            yield $cookieJar->store(...$cookies);
 
             yield $this->write($cookieJar);
         });

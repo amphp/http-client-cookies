@@ -2,7 +2,6 @@
 
 use Amp\Http\Client\Cookie\CookieInterceptor;
 use Amp\Http\Client\Cookie\FileCookieJar;
-use Amp\Http\Client\Cookie\InMemoryCookieJar;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
