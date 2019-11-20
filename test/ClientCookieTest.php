@@ -8,7 +8,6 @@ use Amp\Http\Client\Cookie\CookieTest;
 use Amp\Http\Client\Cookie\InMemoryCookieJar;
 use Amp\Http\Client\HttpClient;
 use Amp\Http\Client\HttpClientBuilder;
-use Amp\Http\Client\Interceptor\LogIntoHttpArchive;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
 use Amp\Http\Cookie\CookieAttributes;
@@ -21,8 +20,6 @@ use Amp\Http\Status;
 use Amp\Socket;
 use Amp\Socket\StaticConnector;
 use Psr\Log\NullLogger;
-use Symfony\Component\Console\Logger\ConsoleLogger;
-use Symfony\Component\Console\Output\StreamOutput;
 use function Amp\Promise\wait;
 use function Amp\Socket\connector;
 
