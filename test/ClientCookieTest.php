@@ -2,6 +2,7 @@
 
 namespace Amp\Test\Artax\Cookie;
 
+use Amp\Http\Client\Connection\DefaultConnectionFactory;
 use Amp\Http\Client\Connection\UnlimitedConnectionPool;
 use Amp\Http\Client\Cookie\CookieInterceptor;
 use Amp\Http\Client\Cookie\CookieTest;
@@ -57,7 +58,7 @@ class ClientCookieTest extends CookieTest
         wait($this->server->start());
 
         $this->client = (new HttpClientBuilder)
-            ->usingPool(new UnlimitedConnectionPool(new StaticConnector($this->address, connector())))
+            ->usingPool(new UnlimitedConnectionPool(new DefaultConnectionFactory(new StaticConnector($this->address, connector()))))
             ->interceptNetwork(new CookieInterceptor($this->jar))
             ->build();
     }
