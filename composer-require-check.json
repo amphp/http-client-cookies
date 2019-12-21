@@ -1,0 +1,36 @@
+{
+    "symbol-whitelist": [
+        "null",
+        "true",
+        "false",
+        "static",
+        "self",
+        "parent",
+        "array",
+        "string",
+        "int",
+        "float",
+        "bool",
+        "iterable",
+        "callable",
+        "void",
+        "object",
+        "Amp\\File\\Driver",
+        "Amp\\File\\exists",
+        "Amp\\File\\get",
+        "Amp\\File\\isdir",
+        "Amp\\File\\mkdir",
+        "Amp\\File\\open",
+        "Amp\\File\\put",
+        "Amp\\File\\size"
+    ],
+    "php-core-extensions": [
+        "Core",
+        "date",
+        "pcre",
+        "Phar",
+        "Reflection",
+        "SPL",
+        "standard"
+    ]
+}
