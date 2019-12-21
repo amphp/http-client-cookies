@@ -69,7 +69,7 @@ More extensive code examples reside in the [`examples`](./examples) directory.
 
 ## Versioning
 
-`amphp/http-client` follows the [semver](http://semver.org/) semantic versioning specification like all other `amphp` packages.
+`amphp/http-client-cookies` follows the [semver](http://semver.org/) semantic versioning specification like all other `amphp` packages.
 
 ## Security
 
