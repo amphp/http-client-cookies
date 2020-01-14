@@ -23,7 +23,10 @@ final class FileCookieJar implements CookieJar
     /** @var Mutex */
     private $mutex;
 
-    public function __construct(string $storagePath, ?Mutex $mutex = null)
+    /** @var bool */
+    private $persistSessionCookies;
+
+    public function __construct(string $storagePath, ?Mutex $mutex = null, bool $persistSessionCookies = false)
     {
         if (!\interface_exists(File\Driver::class)) {
             throw new \Error(self::class . ' requires amphp/file to be installed. Run composer require amphp/file to install it.');
@@ -31,6 +34,7 @@ final class FileCookieJar implements CookieJar
 
         $this->storagePath = $storagePath;
         $this->mutex = $mutex ?? new LocalMutex;
+        $this->persistSessionCookies = $persistSessionCookies;
     }
 
     public function get(PsrUri $uri): Promise
@@ -102,7 +106,7 @@ final class FileCookieJar implements CookieJar
 
             foreach ($cookieJar->getAll() as $cookie) {
                 /** @var $cookie ResponseCookie */
-                if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() > \time()) {
+                if ($cookie->getExpiry() ? $cookie->getExpiry()->getTimestamp() > \time() : $this->persistSessionCookies) {
                     $cookieData .= $cookie . "\r\n";
                 }
             }
