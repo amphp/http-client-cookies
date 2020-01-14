@@ -24,9 +24,9 @@ final class FileCookieJar implements CookieJar
     private $mutex;
 
     /** @var bool */
-    private $persistSessionCookies;
+    private $persistSessionCookies = false;
 
-    public function __construct(string $storagePath, ?Mutex $mutex = null, bool $persistSessionCookies = false)
+    public function __construct(string $storagePath, ?Mutex $mutex = null)
     {
         if (!\interface_exists(File\Driver::class)) {
             throw new \Error(self::class . ' requires amphp/file to be installed. Run composer require amphp/file to install it.');
@@ -34,6 +34,10 @@ final class FileCookieJar implements CookieJar
 
         $this->storagePath = $storagePath;
         $this->mutex = $mutex ?? new LocalMutex;
+    }
+
+    public function persistSessionCookies(bool $persistSessionCookies)
+    {
         $this->persistSessionCookies = $persistSessionCookies;
     }
 
