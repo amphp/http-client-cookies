@@ -23,6 +23,9 @@ final class FileCookieJar implements CookieJar
     /** @var Mutex */
     private $mutex;
 
+    /** @var bool */
+    private $persistSessionCookies = false;
+
     public function __construct(string $storagePath, ?Mutex $mutex = null)
     {
         if (!\interface_exists(File\Driver::class)) {
@@ -31,6 +34,16 @@ final class FileCookieJar implements CookieJar
 
         $this->storagePath = $storagePath;
         $this->mutex = $mutex ?? new LocalMutex;
+    }
+
+    public function enableSessionCookiePersistence()
+    {
+        $this->persistSessionCookies = true;
+    }
+
+    public function disableSessionCookiePersistence()
+    {
+        $this->persistSessionCookies = false;
     }
 
     public function get(PsrUri $uri): Promise
@@ -102,7 +115,7 @@ final class FileCookieJar implements CookieJar
 
             foreach ($cookieJar->getAll() as $cookie) {
                 /** @var $cookie ResponseCookie */
-                if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() > \time()) {
+                if ($cookie->getExpiry() ? $cookie->getExpiry()->getTimestamp() > \time() : $this->persistSessionCookies) {
                     $cookieData .= $cookie . "\r\n";
                 }
             }
