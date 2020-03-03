@@ -36,9 +36,14 @@ final class FileCookieJar implements CookieJar
         $this->mutex = $mutex ?? new LocalMutex;
     }
 
-    public function persistSessionCookies(bool $persistSessionCookies)
+    public function enableSessionCookiePersistence()
     {
-        $this->persistSessionCookies = $persistSessionCookies;
+        $this->persistSessionCookies = true;
+    }
+
+    public function disableSessionCookiePersistence()
+    {
+        $this->persistSessionCookies = false;
     }
 
     public function get(PsrUri $uri): Promise
