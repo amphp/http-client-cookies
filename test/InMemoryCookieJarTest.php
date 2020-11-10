@@ -1,10 +1,6 @@
 <?php /** @noinspection PhpUnhandledExceptionInspection */
 
-namespace Amp\Test\Artax\Cookie;
-
-use Amp\Http\Client\Cookie\CookieJar;
-use Amp\Http\Client\Cookie\CookieJarTest;
-use Amp\Http\Client\Cookie\InMemoryCookieJar;
+namespace Amp\Http\Client\Cookie;
 
 class InMemoryCookieJarTest extends CookieJarTest
 {

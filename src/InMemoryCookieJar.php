@@ -13,9 +13,9 @@ use Psr\Http\Message\UriInterface as PsrUri;
 final class InMemoryCookieJar implements CookieJar
 {
     /** @var ResponseCookie[][][] */
-    private $cookies = [];
+    private array $cookies = [];
 
-    public function store(ResponseCookie ...$cookies): Promise
+    public function store(ResponseCookie ...$cookies): void
     {
         foreach ($cookies as $cookie) {
             if ($cookie->getDomain() === '') {
@@ -24,11 +24,9 @@ final class InMemoryCookieJar implements CookieJar
 
             $this->cookies[$cookie->getDomain()][$cookie->getPath() ?: '/'][$cookie->getName()] = $cookie;
         }
-
-        return new Success;
     }
 
-    public function get(PsrUri $uri): Promise
+    public function get(PsrUri $uri): array
     {
         $this->clearExpiredCookies();
 
@@ -61,7 +59,7 @@ final class InMemoryCookieJar implements CookieJar
             }
         }
 
-        return new Success($matches);
+        return $matches;
     }
 
     public function getAll(): array

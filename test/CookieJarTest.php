@@ -8,8 +8,7 @@ use Amp\Http\Cookie\ResponseCookie;
 
 abstract class CookieJarTest extends CookieTest
 {
-    /** @var CookieJar */
-    private $jar;
+    private CookieJar $jar;
 
     public function setUp(): void
     {
@@ -24,14 +23,12 @@ abstract class CookieJarTest extends CookieTest
      * @param ResponseCookie $cookie
      * @param string         $domain
      * @param bool           $returned
-     *
-     * @return \Generator
      */
-    public function testCookieDomainMatching(ResponseCookie $cookie, string $domain, bool $returned): \Generator
+    public function testCookieDomainMatching(ResponseCookie $cookie, string $domain, bool $returned): void
     {
         $this->jar->store($cookie);
 
-        $requestCookies = yield $this->jar->get($this->getUri('https', $domain, '/'));
+        $requestCookies = $this->jar->get($this->getUri('https', $domain, '/'));
 
         if ($returned) {
             $requestCookie = new RequestCookie($cookie->getName(), $cookie->getValue());

@@ -8,9 +8,9 @@ use function Amp\Dns\normalizeName;
 /** @internal */
 final class PublicSuffixList
 {
-    private static $initialized = false;
-    private static $suffixPatterns;
-    private static $exceptionPatterns;
+    private static bool $initialized = false;
+    private static array $suffixPatterns;
+    private static array $exceptionPatterns;
 
     /**
      * @param string $domain

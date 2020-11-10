@@ -3,37 +3,38 @@
 namespace Amp\Http\Client\Cookie;
 
 use Amp\File;
+use Amp\File\Filesystem;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\Promise;
 use Amp\Sync\LocalMutex;
-use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
 use Psr\Http\Message\UriInterface as PsrUri;
-use function Amp\call;
+use function Amp\async;
+use function Amp\await;
 
 final class FileCookieJar implements CookieJar
 {
     /** @var Promise<InMemoryCookieJar> */
-    private $cookieJar;
+    private Promise $cookieJar;
 
-    /** @var string */
-    private $storagePath;
+    private string $storagePath;
 
-    /** @var Mutex */
-    private $mutex;
+    private Mutex $mutex;
 
-    /** @var bool */
-    private $persistSessionCookies = false;
+    private bool $persistSessionCookies = false;
 
-    public function __construct(string $storagePath, ?Mutex $mutex = null)
+    private Filesystem $filesystem;
+
+    public function __construct(string $storagePath, ?Mutex $mutex = null, ?Filesystem $filesystem = null)
     {
-        if (!\interface_exists(File\Driver::class)) {
+        if (!\class_exists(Filesystem::class)) {
             throw new \Error(self::class . ' requires amphp/file to be installed. Run composer require amphp/file to install it.');
         }
 
         $this->storagePath = $storagePath;
         $this->mutex = $mutex ?? new LocalMutex;
+        $this->filesystem = $filesystem ?? File\filesystem();
     }
 
     public function enableSessionCookiePersistence()
@@ -46,45 +47,37 @@ final class FileCookieJar implements CookieJar
         $this->persistSessionCookies = false;
     }
 
-    public function get(PsrUri $uri): Promise
+    public function get(PsrUri $uri): array
     {
-        return call(function () use ($uri) {
-            /** @var CookieJar $cookieJar */
-            $cookieJar = yield $this->read();
-
-            return $cookieJar->get($uri);
-        });
+        $cookieJar = $this->read();
+        return $cookieJar->get($uri);
     }
 
-    public function store(ResponseCookie ...$cookies): Promise
+    public function store(ResponseCookie ...$cookies): void
     {
-        return call(function () use ($cookies) {
-            /** @var InMemoryCookieJar $cookieJar */
-            $cookieJar = yield $this->read();
+        $cookieJar = $this->read();
 
-            yield $cookieJar->store(...$cookies);
+        $cookieJar->store(...$cookies);
 
-            yield $this->write($cookieJar);
-        });
+        $this->write($cookieJar);
     }
 
-    private function read(): Promise
+    private function read(): InMemoryCookieJar
     {
-        if ($this->cookieJar) {
-            return $this->cookieJar;
+        if (isset($this->cookieJar)) {
+            return await($this->cookieJar);
         }
 
-        return $this->cookieJar = call(function () {
-            /** @var Lock $lock */
-            $lock = yield $this->mutex->acquire();
+        return await($this->cookieJar = async(function () {
+            $lock = $this->mutex->acquire();
 
             $cookieJar = new InMemoryCookieJar;
 
-            if (!yield File\exists($this->storagePath)) {
+            if (!$this->filesystem->exists($this->storagePath)) {
                 return $cookieJar;
             }
 
-            $lines = \explode("\n", yield File\get($this->storagePath));
+            $lines = \explode("\n", $this->filesystem->read($this->storagePath));
             foreach ($lines as $line) {
                 $line = \trim($line);
 
@@ -105,35 +98,32 @@ final class FileCookieJar implements CookieJar
             $lock->release();
 
             return $cookieJar;
-        });
+        }));
     }
 
-    private function write(InMemoryCookieJar $cookieJar): Promise
+    private function write(InMemoryCookieJar $cookieJar): void
     {
-        return call(function () use ($cookieJar) {
-            $cookieData = '';
+        $cookieData = '';
 
-            foreach ($cookieJar->getAll() as $cookie) {
-                /** @var $cookie ResponseCookie */
-                if ($cookie->getExpiry() ? $cookie->getExpiry()->getTimestamp() > \time() : $this->persistSessionCookies) {
-                    $cookieData .= $cookie . "\r\n";
-                }
+        foreach ($cookieJar->getAll() as $cookie) {
+            /** @var $cookie ResponseCookie */
+            if ($cookie->getExpiry() ? $cookie->getExpiry()->getTimestamp() > \time() : $this->persistSessionCookies) {
+                $cookieData .= $cookie . "\r\n";
             }
+        }
 
-            /** @var Lock $lock */
-            $lock = yield $this->mutex->acquire();
+        $lock = $this->mutex->acquire();
 
-            if (!yield File\isdir(\dirname($this->storagePath))) {
-                yield File\mkdir(\dirname($this->storagePath), 0755, true);
+        if (!$this->filesystem->isDirectory(\dirname($this->storagePath))) {
+            $this->filesystem->createDirectoryRecursively(\dirname($this->storagePath), 0755);
 
-                if (!yield File\isdir(\dirname($this->storagePath))) {
-                    throw new HttpException('Failed to create cookie storage directory: ' . $this->storagePath);
-                }
+            if (!$this->filesystem->isDirectory(\dirname($this->storagePath))) {
+                throw new HttpException('Failed to create cookie storage directory: ' . $this->storagePath);
             }
+        }
 
-            yield File\put($this->storagePath, $cookieData);
+        $this->filesystem->write($this->storagePath, $cookieData);
 
-            $lock->release();
-        });
+        $lock->release();
     }
 }

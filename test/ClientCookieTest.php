@@ -1,45 +1,35 @@
 <?php /** @noinspection PhpUnhandledExceptionInspection */
 
-namespace Amp\Test\Artax\Cookie;
+namespace Amp\Http\Client\Cookie;
 
 use Amp\Http\Client\Connection\DefaultConnectionFactory;
 use Amp\Http\Client\Connection\UnlimitedConnectionPool;
-use Amp\Http\Client\Cookie\CookieInterceptor;
-use Amp\Http\Client\Cookie\CookieTest;
-use Amp\Http\Client\Cookie\InMemoryCookieJar;
 use Amp\Http\Client\HttpClient;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
-use Amp\Http\Client\Response;
 use Amp\Http\Cookie\CookieAttributes;
 use Amp\Http\Cookie\ResponseCookie;
+use Amp\Http\Server\HttpServer;
 use Amp\Http\Server\Options;
 use Amp\Http\Server\RequestHandler\CallableRequestHandler;
 use Amp\Http\Server\Response as ServerResponse;
-use Amp\Http\Server\Server;
 use Amp\Http\Status;
 use Amp\Socket;
 use Amp\Socket\StaticConnector;
 use Psr\Log\NullLogger;
-use function Amp\Promise\wait;
 use function Amp\Socket\connector;
 
 class ClientCookieTest extends CookieTest
 {
-    /** @var HttpClient */
-    private $client;
+    private HttpClient $client;
 
-    /** @var InMemoryCookieJar */
-    private $jar;
+    private InMemoryCookieJar $jar;
 
-    /** @var Server */
-    private $server;
+    private HttpServer $server;
 
-    /** @var string */
-    private $address;
+    private string $address;
 
-    /** @var string */
-    private $cookieHeader;
+    private string $cookieHeader;
 
     public function setUp(): void
     {
@@ -51,11 +41,11 @@ class ClientCookieTest extends CookieTest
         $socket->unreference();
 
         $this->address = $socket->getAddress();
-        $this->server = new Server([$socket], new CallableRequestHandler(function () {
+        $this->server = new HttpServer([$socket], new CallableRequestHandler(function () {
             return new ServerResponse(Status::OK, ['set-cookie' => $this->cookieHeader], '');
         }), new NullLogger, (new Options)->withHttp1Timeout(1)->withHttp2Timeout(1));
 
-        wait($this->server->start());
+        $this->server->start();
 
         $this->client = (new HttpClientBuilder)
             ->usingPool(new UnlimitedConnectionPool(new DefaultConnectionFactory(new StaticConnector($this->address, connector()))))
@@ -69,16 +59,13 @@ class ClientCookieTest extends CookieTest
      * @param ResponseCookie $cookie
      * @param string         $requestDomain
      * @param bool           $accept
-     *
-     * @return \Generator
      */
-    public function testCookieAccepting(ResponseCookie $cookie, string $requestDomain, bool $accept): \Generator
+    public function testCookieAccepting(ResponseCookie $cookie, string $requestDomain, bool $accept): void
     {
         $this->cookieHeader = (string) $cookie;
 
-        /** @var Response $response */
-        $response = yield $this->client->request(new Request('http://' . $requestDomain . '/'));
-        yield $response->getBody()->buffer();
+        $response = $this->client->request(new Request('http://' . $requestDomain . '/'));
+        $response->getBody()->buffer();
 
         $cookies = $this->jar->getAll();
 
@@ -88,7 +75,7 @@ class ClientCookieTest extends CookieTest
             $this->assertSame([], $cookies);
         }
 
-        wait($this->server->stop());
+        $this->server->stop();
     }
 
     public function provideCookieDomainMatchData(): array

@@ -11,40 +11,34 @@ use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
 use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
-use Amp\Promise;
-use function Amp\call;
 
 final class CookieInterceptor implements NetworkInterceptor
 {
-    /** @var CookieJar */
-    private $cookieJar;
+    private CookieJar $cookieJar;
 
     public function __construct(CookieJar $cookieJar)
     {
         $this->cookieJar = $cookieJar;
     }
 
-    public function requestViaNetwork(Request $request, CancellationToken $cancellation, Stream $stream): Promise
+    public function requestViaNetwork(Request $request, CancellationToken $cancellation, Stream $stream): Response
     {
-        return call(function () use ($request, $cancellation, $stream) {
-            yield from $this->assignApplicableRequestCookies($request);
+        $this->assignApplicableRequestCookies($request);
 
-            $request->interceptPush(function (Response $response) {
-                yield from $this->storeCookies($response);
-            });
-
-            /** @var Response $response */
-            $response = yield $stream->request($request, $cancellation);
-
-            yield from $this->storeCookies($response);
-
-            return $response;
+        $request->interceptPush(function (Response $response): void {
+            $this->storeCookies($response);
         });
+
+        $response = $stream->request($request, $cancellation);
+
+        $this->storeCookies($response);
+
+        return $response;
     }
 
-    private function assignApplicableRequestCookies(Request $request): \Generator
+    private function assignApplicableRequestCookies(Request $request): void
     {
-        $applicableCookies = yield $this->cookieJar->get($request->getUri());
+        $applicableCookies = $this->cookieJar->get($request->getUri());
 
         if (!$applicableCookies) {
             return; // No cookies matched our request; we're finished.
@@ -111,10 +105,9 @@ final class CookieInterceptor implements NetworkInterceptor
     /**
      * @param Response $response
      *
-     * @return \Generator
      * @throws \Amp\Http\Client\HttpException
      */
-    private function storeCookies(Response $response): \Generator
+    private function storeCookies(Response $response): void
     {
         if ($response->hasHeader('set-cookie')) {
             $requestDomain = $response->getRequest()->getUri()->getHost();
@@ -129,7 +122,7 @@ final class CookieInterceptor implements NetworkInterceptor
             }
 
             if ($cookies) {
-                yield $this->cookieJar->store(...$cookies);
+                $this->cookieJar->store(...$cookies);
             }
         }
     }
