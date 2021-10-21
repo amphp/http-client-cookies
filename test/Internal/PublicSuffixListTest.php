@@ -1,8 +1,7 @@
 <?php
 
-namespace Amp\Test\Artax\Cookie\Internal;
+namespace Amp\Http\Client\Cookie\Internal;
 
-use Amp\Http\Client\Cookie\Internal\PublicSuffixList;
 use PHPUnit\Framework\TestCase;
 
 class PublicSuffixListTest extends TestCase

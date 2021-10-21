@@ -84,7 +84,11 @@ final class FileCookieJar implements CookieJar
                 return $cookieJar;
             }
 
-            $lines = \explode("\n", yield File\get($this->storagePath));
+            $readPromise = \function_exists('Amp\\File\\read')
+                ? File\read($this->storagePath)
+                : File\get($this->storagePath);
+
+            $lines = \explode("\n", yield $readPromise);
             foreach ($lines as $line) {
                 $line = \trim($line);
 
@@ -123,15 +127,25 @@ final class FileCookieJar implements CookieJar
             /** @var Lock $lock */
             $lock = yield $this->mutex->acquire();
 
-            if (!yield File\isdir(\dirname($this->storagePath))) {
-                yield File\mkdir(\dirname($this->storagePath), 0755, true);
-
-                if (!yield File\isdir(\dirname($this->storagePath))) {
+            if (\function_exists('Amp\\File\\createDirectoryRecursively')) {
+                try {
+                    yield File\createDirectoryRecursively(\dirname($this->storagePath), 0755);
+                } catch (File\FilesystemException $e) {
                     throw new HttpException('Failed to create cookie storage directory: ' . $this->storagePath);
                 }
-            }
 
-            yield File\put($this->storagePath, $cookieData);
+                yield File\write($this->storagePath, $cookieData);
+            } else {
+                if (!yield File\isdir(\dirname($this->storagePath))) {
+                    yield File\mkdir(\dirname($this->storagePath), 0755, true);
+
+                    if (!yield File\isdir(\dirname($this->storagePath))) {
+                        throw new HttpException('Failed to create cookie storage directory: ' . $this->storagePath);
+                    }
+                }
+
+                yield File\put($this->storagePath, $cookieData);
+            }
 
             $lock->release();
         });
