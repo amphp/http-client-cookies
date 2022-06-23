@@ -6,8 +6,6 @@ use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\InvalidCookieException;
 use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
-use Amp\Promise;
-use Amp\Success;
 use Psr\Http\Message\UriInterface as PsrUri;
 
 final class InMemoryCookieJar implements CookieJar
@@ -141,11 +139,11 @@ final class InMemoryCookieJar implements CookieJar
             return true;
         }
 
-        if (\strpos($requestPath, $cookiePath) !== 0) {
+        if (!\str_starts_with($requestPath, $cookiePath)) {
             return false;
         }
 
-        if ((\substr($cookiePath, -1) === '/' || $requestPath[\strlen($cookiePath)] === '/')) {
+        if ((\str_ends_with($cookiePath, '/') || $requestPath[\strlen($cookiePath)] === '/')) {
             return true;
         }
 

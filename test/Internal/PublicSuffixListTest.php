@@ -24,7 +24,7 @@ class PublicSuffixListTest extends TestCase
     {
         $lines = \file(__DIR__ . '/../fixture/public_suffix_list_tests.txt', \FILE_IGNORE_NEW_LINES | \FILE_SKIP_EMPTY_LINES);
         $lines = \array_filter($lines, static function ($line) {
-            return \substr($line, 0, 2) !== '//';
+            return !\str_starts_with($line, '//');
         });
 
         return \array_map(static function ($line) {

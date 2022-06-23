@@ -2,14 +2,13 @@
 
 namespace Amp\Http\Client\Cookie;
 
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Amp\Dns\InvalidNameException;
 use Amp\Http\Client\Connection\Stream;
 use Amp\Http\Client\Cookie\Internal\PublicSuffixList;
 use Amp\Http\Client\NetworkInterceptor;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
-use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
 
 final class CookieInterceptor implements NetworkInterceptor
@@ -21,7 +20,7 @@ final class CookieInterceptor implements NetworkInterceptor
         $this->cookieJar = $cookieJar;
     }
 
-    public function requestViaNetwork(Request $request, CancellationToken $cancellation, Stream $stream): Response
+    public function requestViaNetwork(Request $request, Cancellation $cancellation, Stream $stream): Response
     {
         $this->assignApplicableRequestCookies($request);
 
@@ -45,8 +44,6 @@ final class CookieInterceptor implements NetworkInterceptor
         }
 
         $cookiePairs = [];
-
-        /** @var RequestCookie $cookie */
         foreach ($applicableCookies as $cookie) {
             $cookiePairs[] = (string) $cookie;
         }

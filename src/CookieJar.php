@@ -14,7 +14,7 @@ interface CookieJar
      *
      * @param PsrUri $uri
      *
-     * @return RequestCookie[] Returns an array (possibly empty) of all cookie matches.
+     * @return list<RequestCookie> Returns an array (possibly empty) of all cookie matches.
      */
     public function get(PsrUri $uri): array;
 

@@ -1,45 +1,40 @@
 <?php
 
 use Amp\Http\Client\Cookie\CookieInterceptor;
+use Amp\Http\Client\Cookie\FileCookieJar;
 use Amp\Http\Client\Cookie\InMemoryCookieJar;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
-use Amp\Http\Client\Response;
-use Amp\Loop;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-Loop::run(static function () {
-    $cookieJar = new InMemoryCookieJar;
+$filename = $argv[1] ?? null;
 
-    $httpClient = (new HttpClientBuilder)
-        ->interceptNetwork(new CookieInterceptor($cookieJar))
-        ->build();
+$cookieJar = $filename
+    ? new FileCookieJar(__DIR__ . "/{$filename}.cookies")
+    : new InMemoryCookieJar;
 
-    /** @var Response $firstResponse */
-    $firstResponse = yield $httpClient->request(new Request('https://google.com/'));
-    yield $firstResponse->getBody()->buffer();
+$httpClient = (new HttpClientBuilder)
+    ->interceptNetwork(new CookieInterceptor($cookieJar))
+    ->build();
 
-    /** @var Response $secondResponse */
-    $secondResponse = yield $httpClient->request(new Request('https://google.com/'));
-    yield $secondResponse->getBody()->buffer();
+$firstResponse = $httpClient->request(new Request('https://google.com/'));
 
-    /** @var Response $otherDomainResponse */
-    $otherDomainResponse = yield $httpClient->request(new Request('https://amphp.org/'));
-    yield $otherDomainResponse->getBody()->buffer();
+$secondResponse = $httpClient->request(new Request('https://google.com/'));
 
-    print "== first request cookies ==\r\n";
-    print \implode("\r\n", $firstResponse->getRequest()->getHeaderArray('cookie'));
-    print "\r\n\r\n";
+$otherDomainResponse = $httpClient->request(new Request('https://amphp.org/'));
 
-    print "== first response cookies ==\r\n";
-    print \implode("\r\n", $firstResponse->getHeaderArray('set-cookie'));
-    print "\r\n\r\n";
+print "== first request cookies ==\r\n";
+print \implode("\r\n", $firstResponse->getRequest()->getHeaderArray('cookie'));
+print "\r\n\r\n";
 
-    print "== second request sends cookies back ==\r\n";
-    print \implode("\r\n", $secondResponse->getRequest()->getHeaderArray('cookie'));
-    print "\r\n\r\n";
+print "== first response cookies ==\r\n";
+print \implode("\r\n", $firstResponse->getHeaderArray('set-cookie'));
+print "\r\n\r\n";
 
-    print "== other domain request does not send cookies ==\r\n";
-    print \implode("\r\n", $otherDomainResponse->getRequest()->getHeaderArray('cookie'));
-});
+print "== second request sends cookies back ==\r\n";
+print \implode("\r\n", $secondResponse->getRequest()->getHeaderArray('cookie'));
+print "\r\n\r\n";
+
+print "== other domain request does not send cookies ==\r\n";
+print \implode("\r\n", $otherDomainResponse->getRequest()->getHeaderArray('cookie'));

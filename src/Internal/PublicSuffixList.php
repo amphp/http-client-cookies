@@ -56,7 +56,7 @@ final class PublicSuffixList
                 continue;
             }
 
-            if (\substr($line, 0, 2) === '//') {
+            if (\str_starts_with($line, '//')) {
                 continue;
             }
 
@@ -114,15 +114,13 @@ final class PublicSuffixList
             }
         }
 
-        $regex = \array_reduce($regexParts, static function ($carry, $item) use ($exception) {
+        return \array_reduce($regexParts, static function (string $carry, string $item) use ($exception): string {
             if ($carry === '') {
                 return $item;
             }
 
             return $item . "(?:\\." . $carry . ')' . ($exception ? '' : '?');
         }, '');
-
-        return $regex;
     }
 
     private function __construct()

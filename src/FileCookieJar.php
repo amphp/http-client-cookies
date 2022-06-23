@@ -4,27 +4,26 @@ namespace Amp\Http\Client\Cookie;
 
 use Amp\File;
 use Amp\File\Filesystem;
+use Amp\Future;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\ResponseCookie;
-use Amp\Promise;
 use Amp\Sync\LocalMutex;
 use Amp\Sync\Mutex;
 use Psr\Http\Message\UriInterface as PsrUri;
 use function Amp\async;
-use function Amp\await;
 
 final class FileCookieJar implements CookieJar
 {
-    /** @var Promise<InMemoryCookieJar> */
-    private Promise $cookieJar;
+    /** @var Future<InMemoryCookieJar>|null */
+    private ?Future $cookieJar = null;
 
-    private string $storagePath;
+    private readonly string $storagePath;
 
-    private Mutex $mutex;
+    private readonly Mutex $mutex;
 
     private bool $persistSessionCookies = false;
 
-    private Filesystem $filesystem;
+    private readonly Filesystem $filesystem;
 
     public function __construct(string $storagePath, ?Mutex $mutex = null, ?Filesystem $filesystem = null)
     {
@@ -64,11 +63,7 @@ final class FileCookieJar implements CookieJar
 
     private function read(): InMemoryCookieJar
     {
-        if (isset($this->cookieJar)) {
-            return await($this->cookieJar);
-        }
-
-        return await($this->cookieJar = async(function () {
+        $this->cookieJar ??= async(function (): InMemoryCookieJar {
             $lock = $this->mutex->acquire();
 
             $cookieJar = new InMemoryCookieJar;
@@ -98,7 +93,9 @@ final class FileCookieJar implements CookieJar
             $lock->release();
 
             return $cookieJar;
-        }));
+        });
+
+        return $this->cookieJar->await();
     }
 
     private function write(InMemoryCookieJar $cookieJar): void
