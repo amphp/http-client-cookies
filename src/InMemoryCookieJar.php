@@ -11,7 +11,7 @@ use Psr\Http\Message\UriInterface as PsrUri;
 final class InMemoryCookieJar implements CookieJar
 {
     /**
-     * Cookies stored by Domain -> Path -> Name
+     * Cookies stored by Domain -> Path -> Name.
      * @var array<string, array<string, array<string, ResponseCookie>>>
      */
     private array $cookies = [];
@@ -102,11 +102,6 @@ final class InMemoryCookieJar implements CookieJar
     }
 
     /**
-     * @param string $requestDomain
-     * @param string $cookieDomain
-     *
-     * @return bool
-     *
      * @link http://tools.ietf.org/html/rfc6265#section-5.1.3
      */
     private function matchesDomain(string $requestDomain, string $cookieDomain): bool
@@ -134,11 +129,6 @@ final class InMemoryCookieJar implements CookieJar
 
     /**
      * @link http://tools.ietf.org/html/rfc6265#section-5.1.4
-     *
-     * @param string $requestPath
-     * @param string $cookiePath
-     *
-     * @return bool
      */
     private function matchesPath(string $requestPath, string $cookiePath): bool
     {

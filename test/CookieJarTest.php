@@ -19,10 +19,6 @@ abstract class CookieJarTest extends CookieTest
 
     /**
      * @dataProvider provideCookieDomainMatchData
-     *
-     * @param ResponseCookie $cookie
-     * @param string         $domain
-     * @param bool           $returned
      */
     public function testCookieDomainMatching(ResponseCookie $cookie, string $domain, bool $returned): void
     {

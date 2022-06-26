@@ -42,11 +42,11 @@ class ClientCookieTest extends CookieTest
             httpDriverFactory: new DefaultHttpDriverFactory($logger, streamTimeout: 1, connectionTimeout: 1),
         );
 
-        $this->server->expose(new Socket\InternetAddress('127.0.0.1',  0));
+        $this->server->expose(new Socket\InternetAddress('127.0.0.1', 0));
 
         $this->server->start(
             new ClosureRequestHandler(
-                fn() => new ServerResponse(Status::OK, ['set-cookie' => $this->cookieHeader]),
+                fn () => new ServerResponse(Status::OK, ['set-cookie' => $this->cookieHeader]),
             ),
             new DefaultErrorHandler(),
         );
@@ -54,9 +54,11 @@ class ClientCookieTest extends CookieTest
         $socket = $this->server->getServers()[0] ?? self::fail('No socket servers created by HTTP server');
 
         $this->client = (new HttpClientBuilder)
-            ->usingPool(new UnlimitedConnectionPool(
-                new DefaultConnectionFactory(
-                    new Socket\StaticSocketConnector($socket->getAddress()->toString(), Socket\socketConnector()))
+            ->usingPool(
+                new UnlimitedConnectionPool(
+                    new DefaultConnectionFactory(
+                        new Socket\StaticSocketConnector($socket->getAddress()->toString(), Socket\socketConnector())
+                    ),
                 ),
             )
             ->interceptNetwork(new CookieInterceptor($this->jar))
@@ -72,14 +74,10 @@ class ClientCookieTest extends CookieTest
 
     /**
      * @dataProvider provideCookieDomainMatchData
-     *
-     * @param ResponseCookie $cookie
-     * @param string $requestDomain
-     * @param bool $accept
      */
     public function testCookieAccepting(ResponseCookie $cookie, string $requestDomain, bool $accept): void
     {
-        $this->cookieHeader = (string)$cookie;
+        $this->cookieHeader = (string) $cookie;
 
         $response = $this->client->request(new Request('http://' . $requestDomain . '/'));
         $response->getBody()->buffer();

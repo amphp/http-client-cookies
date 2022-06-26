@@ -12,16 +12,12 @@ interface CookieJar
     /**
      * Retrieve all cookies matching the specified constraints.
      *
-     * @param PsrUri $uri
-     *
      * @return list<RequestCookie> Returns an array (possibly empty) of all cookie matches.
      */
     public function get(PsrUri $uri): array;
 
     /**
      * Store a cookie.
-     *
-     * @param ResponseCookie ...$cookie
      *
      * @throws HttpException
      */

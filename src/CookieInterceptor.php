@@ -100,8 +100,6 @@ final class CookieInterceptor implements NetworkInterceptor
     }
 
     /**
-     * @param Response $response
-     *
      * @throws \Amp\Http\Client\HttpException
      */
     private function storeCookies(Response $response): void

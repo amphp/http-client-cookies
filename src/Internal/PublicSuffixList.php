@@ -13,10 +13,6 @@ final class PublicSuffixList
     private static array $exceptionPatterns;
 
     /**
-     * @param string $domain
-     *
-     * @return bool
-     *
      * @throws InvalidNameException
      */
     public static function isPublicSuffix(string $domain): bool
@@ -84,11 +80,6 @@ final class PublicSuffixList
     }
 
     /**
-     * @param string $rule
-     * @param bool   $exception
-     *
-     * @return string
-     *
      * @throws InvalidNameException
      */
     private static function toRegex(string $rule, bool $exception): string

@@ -25,16 +25,16 @@ $secondResponse = $httpClient->request(new Request('https://google.com/'));
 $otherDomainResponse = $httpClient->request(new Request('https://amphp.org/'));
 
 print "== first request cookies ==\r\n";
-print \implode("\r\n", $firstResponse->getRequest()->getHeaderArray('cookie'));
+print implode("\r\n", $firstResponse->getRequest()->getHeaderArray('cookie'));
 print "\r\n\r\n";
 
 print "== first response cookies ==\r\n";
-print \implode("\r\n", $firstResponse->getHeaderArray('set-cookie'));
+print implode("\r\n", $firstResponse->getHeaderArray('set-cookie'));
 print "\r\n\r\n";
 
 print "== second request sends cookies back ==\r\n";
-print \implode("\r\n", $secondResponse->getRequest()->getHeaderArray('cookie'));
+print implode("\r\n", $secondResponse->getRequest()->getHeaderArray('cookie'));
 print "\r\n\r\n";
 
 print "== other domain request does not send cookies ==\r\n";
-print \implode("\r\n", $otherDomainResponse->getRequest()->getHeaderArray('cookie'));
+print implode("\r\n", $otherDomainResponse->getRequest()->getHeaderArray('cookie'));
