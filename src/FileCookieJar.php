@@ -2,6 +2,7 @@
 
 namespace Amp\Http\Client\Cookie;
 
+use Amp\ByteStream;
 use Amp\File;
 use Amp\File\Filesystem;
 use Amp\Future;
@@ -72,8 +73,9 @@ final class FileCookieJar implements CookieJar
                 return $cookieJar;
             }
 
-            $lines = \explode("\n", $this->filesystem->read($this->storagePath));
-            foreach ($lines as $line) {
+            $file = $this->filesystem->openFile($this->storagePath, 'r');
+
+            foreach (ByteStream\splitLines($file) as $line) {
                 $line = \trim($line);
 
                 if ($line) {
@@ -90,6 +92,7 @@ final class FileCookieJar implements CookieJar
                 }
             }
 
+            $file->close();
             $lock->release();
 
             return $cookieJar;
@@ -100,15 +103,6 @@ final class FileCookieJar implements CookieJar
 
     private function write(InMemoryCookieJar $cookieJar): void
     {
-        $cookieData = '';
-
-        foreach ($cookieJar->getAll() as $cookie) {
-            /** @var $cookie ResponseCookie */
-            if ($cookie->getExpiry() ? $cookie->getExpiry()->getTimestamp() > \time() : $this->persistSessionCookies) {
-                $cookieData .= $cookie . "\r\n";
-            }
-        }
-
         $lock = $this->mutex->acquire();
 
         if (!$this->filesystem->isDirectory(\dirname($this->storagePath))) {
@@ -119,8 +113,15 @@ final class FileCookieJar implements CookieJar
             }
         }
 
-        $this->filesystem->write($this->storagePath, $cookieData);
+        $now = \time();
+        $file = $this->filesystem->openFile($this->storagePath, 'w');
+        foreach ($cookieJar->getAll() as $cookie) {
+            if ($cookie->getExpiry() ? $cookie->getExpiry()->getTimestamp() > $now : $this->persistSessionCookies) {
+                $file->write($cookie . "\r\n");
+            }
+        }
 
+        $file->close();
         $lock->release();
     }
 }

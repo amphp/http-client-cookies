@@ -10,7 +10,10 @@ use Psr\Http\Message\UriInterface as PsrUri;
 
 final class InMemoryCookieJar implements CookieJar
 {
-    /** @var ResponseCookie[][][] */
+    /**
+     * Cookies stored by Domain -> Path -> Name
+     * @var array<string, array<string, array<string, ResponseCookie>>>
+     */
     private array $cookies = [];
 
     public function store(ResponseCookie ...$cookies): void
@@ -60,6 +63,9 @@ final class InMemoryCookieJar implements CookieJar
         return $matches;
     }
 
+    /**
+     * @return list<ResponseCookie>
+     */
     public function getAll(): array
     {
         $cookies = [];
@@ -82,11 +88,12 @@ final class InMemoryCookieJar implements CookieJar
 
     private function clearExpiredCookies(): void
     {
+        $now = \time();
         foreach ($this->cookies as $domain => $domainCookies) {
             foreach ($domainCookies as $path => $pathCookies) {
                 foreach ($pathCookies as $name => $cookie) {
                     /** @var ResponseCookie $cookie */
-                    if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() < \time()) {
+                    if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() < $now) {
                         unset($this->cookies[$domain][$path][$name]);
                     }
                 }
