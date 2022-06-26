@@ -15,14 +15,10 @@
         "callable",
         "void",
         "object",
-        "Amp\\File\\Driver",
-        "Amp\\File\\exists",
-        "Amp\\File\\get",
-        "Amp\\File\\isdir",
-        "Amp\\File\\mkdir",
-        "Amp\\File\\open",
-        "Amp\\File\\put",
-        "Amp\\File\\size"
+        "mixed",
+        "Amp\\ByteStream\\splitLines",
+        "Amp\\File\\Filesystem",
+        "Amp\\File\\filesystem"
     ],
     "php-core-extensions": [
         "Core",
