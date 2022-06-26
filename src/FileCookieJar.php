@@ -37,12 +37,12 @@ final class FileCookieJar implements CookieJar
         $this->filesystem = $filesystem ?? File\filesystem();
     }
 
-    public function enableSessionCookiePersistence()
+    public function enableSessionCookiePersistence(): void
     {
         $this->persistSessionCookies = true;
     }
 
-    public function disableSessionCookiePersistence()
+    public function disableSessionCookiePersistence(): void
     {
         $this->persistSessionCookies = false;
     }
@@ -116,7 +116,8 @@ final class FileCookieJar implements CookieJar
         $now = \time();
         $file = $this->filesystem->openFile($this->storagePath, 'w');
         foreach ($cookieJar->getAll() as $cookie) {
-            if ($cookie->getExpiry() ? $cookie->getExpiry()->getTimestamp() > $now : $this->persistSessionCookies) {
+            $expiry = $cookie->getExpiry();
+            if ($expiry ? $expiry->getTimestamp() > $now : $this->persistSessionCookies) {
                 $file->write($cookie . "\r\n");
             }
         }

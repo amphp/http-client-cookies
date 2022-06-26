@@ -24,8 +24,9 @@ final class CookieInterceptor implements NetworkInterceptor
     {
         $this->assignApplicableRequestCookies($request);
 
-        $request->interceptPush(function (Response $response): void {
+        $request->interceptPush(function (Request $request, Response $response): Response {
             $this->storeCookies($response);
+            return $response;
         });
 
         $response = $stream->request($request, $cancellation);
@@ -48,13 +49,11 @@ final class CookieInterceptor implements NetworkInterceptor
             $cookiePairs[] = (string) $cookie;
         }
 
-        if ($cookiePairs) {
-            if ($request->hasHeader('cookie')) {
-                \array_unshift($cookiePairs, $request->getHeader('cookie'));
-            }
-
-            $request->setHeader('cookie', \implode('; ', $cookiePairs));
+        if ($request->hasHeader('cookie')) {
+            \array_unshift($cookiePairs, $request->getHeader('cookie'));
         }
+
+        $request->setHeader('cookie', \implode('; ', $cookiePairs));
     }
 
     private function createResponseCookie(string $requestDomain, string $rawCookieStr): ?ResponseCookie

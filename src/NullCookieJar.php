@@ -12,7 +12,7 @@ final class NullCookieJar implements CookieJar
         return [];
     }
 
-    public function store(ResponseCookie ...$cookie): void
+    public function store(ResponseCookie ...$cookies): void
     {
         // nothing to do
     }

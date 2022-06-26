@@ -92,8 +92,7 @@ final class InMemoryCookieJar implements CookieJar
         foreach ($this->cookies as $domain => $domainCookies) {
             foreach ($domainCookies as $path => $pathCookies) {
                 foreach ($pathCookies as $name => $cookie) {
-                    /** @var ResponseCookie $cookie */
-                    if ($cookie->getExpiry() && $cookie->getExpiry()->getTimestamp() < $now) {
+                    if (($cookie->getExpiry()?->getTimestamp() ?? $now) < $now) {
                         unset($this->cookies[$domain][$path][$name]);
                     }
                 }

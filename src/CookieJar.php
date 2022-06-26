@@ -21,5 +21,5 @@ interface CookieJar
      *
      * @throws HttpException
      */
-    public function store(ResponseCookie ...$cookie): void;
+    public function store(ResponseCookie ...$cookies): void;
 }
