@@ -23,7 +23,7 @@ class ClientCookieTest extends CookieTest
 {
     private HttpClient $client;
 
-    private InMemoryCookieJar $jar;
+    private LocalCookieJar $jar;
 
     private HttpServer $server;
 
@@ -33,7 +33,7 @@ class ClientCookieTest extends CookieTest
     {
         parent::setUp();
 
-        $this->jar = new InMemoryCookieJar;
+        $this->jar = new LocalCookieJar;
 
         $logger = new NullLogger();
 

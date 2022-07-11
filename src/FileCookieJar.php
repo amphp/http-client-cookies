@@ -15,7 +15,7 @@ use function Amp\async;
 
 final class FileCookieJar implements CookieJar
 {
-    /** @var Future<InMemoryCookieJar>|null */
+    /** @var Future<LocalCookieJar>|null */
     private ?Future $cookieJar = null;
 
     private readonly string $storagePath;
@@ -62,12 +62,12 @@ final class FileCookieJar implements CookieJar
         $this->write($cookieJar);
     }
 
-    private function read(): InMemoryCookieJar
+    private function read(): LocalCookieJar
     {
-        $this->cookieJar ??= async(function (): InMemoryCookieJar {
+        $this->cookieJar ??= async(function (): LocalCookieJar {
             $lock = $this->mutex->acquire();
 
-            $cookieJar = new InMemoryCookieJar;
+            $cookieJar = new LocalCookieJar;
 
             if (!$this->filesystem->exists($this->storagePath)) {
                 return $cookieJar;
@@ -101,7 +101,7 @@ final class FileCookieJar implements CookieJar
         return $this->cookieJar->await();
     }
 
-    private function write(InMemoryCookieJar $cookieJar): void
+    private function write(LocalCookieJar $cookieJar): void
     {
         $lock = $this->mutex->acquire();
 

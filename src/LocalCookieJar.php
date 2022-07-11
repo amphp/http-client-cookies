@@ -8,7 +8,7 @@ use Amp\Http\Cookie\RequestCookie;
 use Amp\Http\Cookie\ResponseCookie;
 use Psr\Http\Message\UriInterface as PsrUri;
 
-final class InMemoryCookieJar implements CookieJar
+final class LocalCookieJar implements CookieJar
 {
     /**
      * Cookies stored by Domain -> Path -> Name.

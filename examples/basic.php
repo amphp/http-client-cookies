@@ -2,7 +2,7 @@
 
 use Amp\Http\Client\Cookie\CookieInterceptor;
 use Amp\Http\Client\Cookie\FileCookieJar;
-use Amp\Http\Client\Cookie\InMemoryCookieJar;
+use Amp\Http\Client\Cookie\LocalCookieJar;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
 
@@ -12,7 +12,7 @@ $filename = $argv[1] ?? null;
 
 $cookieJar = $filename
     ? new FileCookieJar(__DIR__ . "/{$filename}.cookies")
-    : new InMemoryCookieJar;
+    : new LocalCookieJar;
 
 $httpClient = (new HttpClientBuilder)
     ->interceptNetwork(new CookieInterceptor($cookieJar))
