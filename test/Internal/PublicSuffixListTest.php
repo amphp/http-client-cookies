@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Amp\Http\Client\Cookie\Internal;
 
@@ -10,8 +10,6 @@ class PublicSuffixListTest extends TestCase
      * @dataProvider provideTestData
      * @requires extension intl
      *
-     * @param $domain
-     * @param $expectation
      *
      * @throws \Amp\Dns\InvalidNameException
      */
