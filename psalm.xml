@@ -17,19 +17,6 @@
     </projectFiles>
 
     <issueHandlers>
-        <StringIncrement>
-            <errorLevel type="suppress">
-                <directory name="examples"/>
-                <directory name="src"/>
-            </errorLevel>
-        </StringIncrement>
-
-        <DuplicateClass>
-            <errorLevel type="suppress">
-                <directory name="examples"/>
-            </errorLevel>
-        </DuplicateClass>
-
         <RedundantConditionGivenDocblockType>
             <errorLevel type="suppress">
                 <directory name="src"/>
