@@ -18,22 +18,19 @@ final class FileCookieJar implements CookieJar
     /** @var Future<LocalCookieJar>|null */
     private ?Future $cookieJar = null;
 
-    private readonly string $storagePath;
-
-    private readonly Mutex $mutex;
-
     private bool $persistSessionCookies = false;
 
     private readonly Filesystem $filesystem;
 
-    public function __construct(string $storagePath, ?Mutex $mutex = null, ?Filesystem $filesystem = null)
-    {
+    public function __construct(
+        private readonly string $storagePath,
+        private readonly Mutex $mutex = new LocalMutex(),
+        ?Filesystem $filesystem = null
+    ) {
         if (!\class_exists(Filesystem::class)) {
             throw new \Error(self::class . ' requires amphp/file to be installed. Run composer require amphp/file to install it.');
         }
 
-        $this->storagePath = $storagePath;
-        $this->mutex = $mutex ?? new LocalMutex;
         $this->filesystem = $filesystem ?? File\filesystem();
     }
 

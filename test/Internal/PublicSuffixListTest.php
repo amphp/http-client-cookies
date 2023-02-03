@@ -2,6 +2,7 @@
 
 namespace Amp\Http\Client\Cookie\Internal;
 
+use Amp\Dns\InvalidNameException;
 use PHPUnit\Framework\TestCase;
 
 class PublicSuffixListTest extends TestCase
@@ -10,8 +11,7 @@ class PublicSuffixListTest extends TestCase
      * @dataProvider provideTestData
      * @requires extension intl
      *
-     *
-     * @throws \Amp\Dns\InvalidNameException
+     * @throws InvalidNameException
      */
     public function testWithData($domain, $expectation): void
     {

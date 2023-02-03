@@ -13,11 +13,8 @@ use Amp\Http\Cookie\ResponseCookie;
 
 final class CookieInterceptor implements NetworkInterceptor
 {
-    private CookieJar $cookieJar;
-
-    public function __construct(CookieJar $cookieJar)
+    public function __construct(private readonly CookieJar $cookieJar)
     {
-        $this->cookieJar = $cookieJar;
     }
 
     public function requestViaNetwork(Request $request, Cancellation $cancellation, Stream $stream): Response
