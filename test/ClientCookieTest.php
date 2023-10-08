@@ -9,13 +9,13 @@ use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
 use Amp\Http\Cookie\CookieAttributes;
 use Amp\Http\Cookie\ResponseCookie;
+use Amp\Http\HttpStatus;
 use Amp\Http\Server\DefaultErrorHandler;
 use Amp\Http\Server\Driver\DefaultHttpDriverFactory;
 use Amp\Http\Server\HttpServer;
 use Amp\Http\Server\RequestHandler\ClosureRequestHandler;
 use Amp\Http\Server\Response as ServerResponse;
 use Amp\Http\Server\SocketHttpServer;
-use Amp\Http\Status;
 use Amp\Socket;
 use Psr\Log\NullLogger;
 
@@ -37,7 +37,7 @@ class ClientCookieTest extends CookieTest
 
         $logger = new NullLogger();
 
-        $this->server = new SocketHttpServer(
+        $this->server = SocketHttpServer::createForDirectAccess(
             $logger,
             httpDriverFactory: new DefaultHttpDriverFactory($logger, streamTimeout: 1, connectionTimeout: 1),
         );
@@ -46,7 +46,7 @@ class ClientCookieTest extends CookieTest
 
         $this->server->start(
             new ClosureRequestHandler(
-                fn () => new ServerResponse(Status::OK, ['set-cookie' => $this->cookieHeader]),
+                fn () => new ServerResponse(HttpStatus::OK, ['set-cookie' => $this->cookieHeader]),
             ),
             new DefaultErrorHandler(),
         );
