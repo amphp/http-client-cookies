@@ -1,7 +1,6 @@
-<h1 align="center"><img src="https://raw.githubusercontent.com/amphp/logo/master/repos/http-client.png?v=05-11-2019" alt="HTTP Client" width="350"></h1>
+# amphp/http-client-cookies
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
-
+AMPHP is a collection of event-driven libraries for PHP designed with fibers and concurrency in mind.
 This package provides automatic cookie handling as a plugin for [`amphp/http-client`](https://github.com/amphp/http-client).
 
 ## Installation
