@@ -48,11 +48,11 @@ final class LocalCookieJar implements CookieJar
                     continue;
                 }
 
-                foreach ($pathCookies as $cookieName => $cookie) {
+                foreach ($pathCookies as $cookie) {
                     if ($isRequestSecure || !$cookie->isSecure()) {
                         try {
                             $matches[] = new RequestCookie($cookie->getName(), $cookie->getValue());
-                        } catch (InvalidCookieException $e) {
+                        } catch (InvalidCookieException) {
                             // ignore cookie
                         }
                     }

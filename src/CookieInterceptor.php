@@ -6,6 +6,7 @@ use Amp\Cancellation;
 use Amp\Dns\InvalidNameException;
 use Amp\Http\Client\Connection\Stream;
 use Amp\Http\Client\Cookie\Internal\PublicSuffixList;
+use Amp\Http\Client\HttpException;
 use Amp\Http\Client\NetworkInterceptor;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
@@ -96,7 +97,7 @@ final class CookieInterceptor implements NetworkInterceptor
     }
 
     /**
-     * @throws \Amp\Http\Client\HttpException
+     * @throws HttpException
      */
     private function storeCookies(Response $response): void
     {
